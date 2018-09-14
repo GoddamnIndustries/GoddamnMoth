@@ -10,9 +10,11 @@ geom_point_2d geom_intersects(geom_line_2d const& c, geom_line_2d const& d)
 
 	auto const det = -c_vec[0] * d_vec[1] + d_vec[0] * c_vec[1];
 
-
+/*
 	if(det == 0) // c == d or has now intersection points
 		throw geom_error();
+*/
+
 
 	auto const b1 = d.P0().X() - c.P0().X();
 	auto const b2 = d.P0().Y() - c.P0().Y();
@@ -22,6 +24,10 @@ geom_point_2d geom_intersects(geom_line_2d const& c, geom_line_2d const& d)
 	return geom_point_2d(c.P0().X() + alpha * c_vec[0], c.P0().Y() + alpha * c_vec[1]);
 
 }
+
+
+
+
 
 
 

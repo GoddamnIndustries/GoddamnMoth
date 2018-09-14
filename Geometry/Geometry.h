@@ -23,7 +23,7 @@ public:
 	}
 };
 
-// Line in 2D space
+// Line in 2D space (segment)
 class geom_line_2d
 {
 	geom_point_2d point0, point1;
@@ -42,6 +42,18 @@ public:
 		return point1;
 	}
 
+	bool if_point_on_segment(geom_point_2d const& point) const
+	{
+		double const alpha = (point.X() - point0.X()) / (point1.X() - point0.X());
+		if((alpha < 0) || (alpha > 1))
+			return false;
+
+		double const beta = (point.Y() - point0.Y()) / (point1.Y() - point0.Y());
+		if(alpha != beta)
+			return false;
+		return true;
+	}
+
 };
 
 // Returns intersection point of two lines
@@ -53,7 +65,24 @@ class geom_convex_shape
 	std::vector<geom_line_2d> lines;
 
 public:
-	bool is_internal(const geom_point_2d& point) const;
+
+	geom_convex_shape(std::vector<geom_line_2d> const& lines_v): lines(lines_v)
+	{}
+
+	bool is_internal(const geom_point_2d& point) const
+	{
+		geom_line_2d line_from_point(point, geom_point_2d(point.X() + 1.0, point.Y()));
+		unsigned inters_counter = 0;
+		for(auto const& line : lines)
+		{
+			auto const inters_point = geom_intersects(line_from_point, line);
+			if((inters_point.X() > point.X()) && (line.if_point_on_segment(inters_point)))
+				++inters_counter;
+		}
+		if((inters_counter % 2) == 0)
+			return false;
+		return true;
+	}
 };
 
 class geom_convex_shape_vector
@@ -80,8 +109,6 @@ class geom_polygon
 	geom_convex_shape_vector split_convex() const;
 };
 
-class geom_error
-{};
 
 
 #endif //GODDAMNOPUWENIJSOLVER_GEOMETRY_H
