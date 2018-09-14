@@ -1,6 +1,8 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.10)
 project(GoddamnOpuwenijSolver)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(GoddamnOpuwenijSolver main.cpp Geometry/Geometry.h Geometry/Geometry.cpp)
+add_executable(GoddamnOpuwenijSolver main.cpp 
+				libGeometry/Geometry.h 
+				libGeometry/Geometry.cpp)

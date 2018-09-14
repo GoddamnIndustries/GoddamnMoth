@@ -8,7 +8,6 @@
 
 #include "Scalar.h"
 #include "Vector.h"
-#include "Permutation.h"
 #include "Utils/Parallel.h"
 #include "Utils/Array.h"
 

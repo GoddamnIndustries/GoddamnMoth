@@ -1,6 +1,7 @@
 #include <iostream>
 
-#include "Geometry/Geometry.h"
+#include "libGeometry/Geometry.h"
+#include "libLinearAlgebra/Matrix.h"
 
 int main()
 {
@@ -15,7 +16,7 @@ int main()
 
 	geom_convex_shape shape(line_v);
 
-	geom_point_2d point(1.0, -0.5);
+	geom_point_2d point(1.0, 0.5);
 
 	std::cout << shape.is_internal(point) << std::endl;
 
