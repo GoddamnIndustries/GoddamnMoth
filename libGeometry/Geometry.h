@@ -292,15 +292,152 @@ private:
 // Polygon class
 class geom_polygon
 {
-//	std::vector<geom_line_2d> lines;
-	std::vector<geom_point_2d> vertices;
+	std::vector<geom_line_2d> lines;
+
+public:
+
+	geom_polygon(std::vector<geom_line_2d> const& lines_v): lines(lines_v)
+	{}
+
+	bool is_internal(const geom_point_2d& point) const
+	{
+		geom_line_2d line_from_point(point, geom_point_2d(point.X() + 1.0, point.Y()));
+		unsigned inters_counter = 0;
+		for(auto const& line : lines)
+		{
+			auto const inters_point = geom_intersects(line_from_point, line);
+			if((inters_point.X() > point.X()) && (line.if_point_on_segment(inters_point)))
+				++inters_counter;
+		}
+		if((inters_counter % 2) == 0)
+			return false;
+		return true;
+	}
+
+	geom_line_2d const* get_line(int i) const
+	{
+		return &(lines[i]);
+	}
+
+	geom_line_2d* get_line(int i)
+	{
+		return &(lines[i]);
+	}
+
+	int lines_number() const
+	{
+		return lines.size();
+	}
 
 
-// and other useful stuff.
-// with Hertel-Mehlhorn algorithm
-	geom_convex_shape_vector split_convex() const;
 };
 
 
+class geom_polygon_vert_list
+{
+	geom_point_2d point;
+
+	geom_polygon_vert_list* next;
+
+	geom_polygon_vert_list* other_in = nullptr;
+
+	geom_polygon_vert_list* other_out = nullptr;
+
+
+public:
+
+	geom_polygon_vert_list(geom_point_2d const& p): point(p), next(this)
+	{}
+
+	geom_polygon_vert_list* next_node() const
+	{
+		return next;
+	}
+
+	void insert(geom_point_2d const& p)
+	{
+		geom_polygon_vert_list* new_pol_list = new geom_polygon_vert_list(point);
+
+		new_pol_list->next = next;
+		next = new_pol_list;
+	}
+
+	geom_line_2d make_line() const
+	{
+		return geom_line_2d(point, next->point);
+	}
+
+	bool is_internal(const geom_point_2d& point) const
+	{
+		geom_line_2d line_from_point(point, geom_point_2d(point.X() + 1.0, point.Y()));
+		unsigned inters_counter = 0;
+		auto list_iter = this;
+		do
+		{
+			auto line = list_iter->make_line();
+			auto const inters_point = geom_intersects(line_from_point, line);
+			if((inters_point.X() > point.X()) && (line.if_point_on_segment(inters_point)))
+				++inters_counter;
+
+			list_iter = list_iter->next_node();
+
+		} while(list_iter != this);
+
+		if((inters_counter % 2) == 0)
+			return false;
+		return true;
+	}
+
+	geom_point_2d get_point() const
+	{
+		return point;
+	}
+
+	void print(std::string const& filepath) const
+	{
+		std::ofstream file;
+		file.open(filepath);
+
+		auto list_iter = this;
+
+		do
+		{
+			auto edge = list_iter->make_line();
+			file << edge.P0().X() << " " << edge.P0().Y() << std::endl;
+			file << edge.P1().X() << " " << edge.P1().Y() << std::endl;
+			file << std::endl;
+
+			list_iter = list_iter->next_node();
+		} while(list_iter != this);
+
+	}
+
+	void set_other_in(geom_polygon_vert_list* const list)
+	{
+		other_in = list;
+	}
+	void set_other_out(geom_polygon_vert_list* const list)
+	{
+		other_out = list;
+	}
+
+	geom_polygon_vert_list* get_other_in() const
+	{
+		return other_in;
+	}
+
+	geom_polygon_vert_list* get_other_out() const
+	{
+		return other_out;
+	}
+
+
+};
+
+geom_polygon_vert_list* geom_polygon_to_list(geom_polygon const& polygon);
+
+geom_polygon geom_list_to_polygon(geom_polygon_vert_list* const polygon_list);
+
+void geom_clip(geom_polygon_vert_list* A, geom_polygon_vert_list* B);
 
 #endif //GODDAMNOPUWENIJSOLVER_GEOMETRY_H

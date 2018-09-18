@@ -138,7 +138,78 @@ geom_convex_shape_vector geom_area::triangulate(geom_triangle_params const& tria
 
 }
 
+geom_polygon_vert_list* geom_polygon_to_list(geom_polygon const& polygon)
+{
+	geom_polygon_vert_list* polygon_list = new geom_polygon_vert_list(polygon.get_line(0)->P0());
+	geom_polygon_vert_list* list_iter = polygon_list;
+
+	for(int i = 1; i < polygon.lines_number(); ++i)
+	{
+		list_iter->insert(polygon.get_line(i)->P0());
+		list_iter = list_iter->next_node();
+	}
+
+	return polygon_list;
+}
+
+geom_polygon geom_list_to_polygon(geom_polygon_vert_list* const polygon_list)
+{
+	auto list_iter = polygon_list;
+
+	std::vector<geom_line_2d> lines;
+	do
+	{
+		lines.push_back(list_iter->make_line());
+
+		list_iter = list_iter->next_node();
+
+	} while(list_iter != polygon_list);
+
+	return geom_polygon(lines);
+}
+
+void geom_clip(geom_polygon_vert_list* A, geom_polygon_vert_list* B)
+{
+	auto A_iter = A;
+	do
+	{
+		auto A_edge_seg = A_iter->make_line();
+		auto B_iter = B;
+		do
+		{
+			auto B_edge_seg = B_iter->make_line();
+
+			auto intersection_point = geom_intersects(A_edge_seg, B_edge_seg);
+
+			bool const intersects = (A_edge_seg.if_point_on_segment(intersection_point)
+					&& B_edge_seg.if_point_on_segment(intersection_point))
+
+			if(intersects)
+			{
+				A_iter->insert(intersection_point);
+				B_iter->insert(intersection_point);
 
 
+				bool n_0 = B->is_internal(A_edge_seg.P0());
+				bool n_1 = B->is_internal(A_edge_seg.P1());
+				assert(n_0 ^ n_1);
+
+				if (!n_0 && n_1)
+				{
+					B_iter->next_node()->set_other_in(A_iter->next_node());
+					A_iter->next_node()->set_other_out(B_iter->next_node());
+				} else
+				{
+					B_iter->next_node()->set_other_out(A_iter->next_node());
+					A_iter->next_node()->set_other_in(B_iter->next_node());
+				}
+			}
+
+			B_iter = B_iter->next_node();
+
+		} while(B_iter != B);
 
 
+		A_iter = A_iter->next_node();
+	} while(A_iter != A);
+}
