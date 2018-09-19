@@ -28,15 +28,37 @@ int main()
 
 	geom_e2d e4({0.0, -1.0}, {1.0, 0.0});
 
+	geom_e2d e5({0.7, 0.7}, {0.5, 0.5});
+	geom_e2d e6({0.5, 0.5}, {5.0, 5.0});
+	geom_e2d e7({-5.0, -5.0}, {0.5, 0.5});
+	geom_e2d e8({0.5, 0.5}, {-5.0, -5.0});
 
-	geom_e2d int_seg_1, int_seg_2, int_seg_3;
+
+
+
+	geom_e2d int_seg_1, int_seg_2, int_seg_3, int_seg_4, int_seg_5, int_seg_6, int_seg_7;
 	auto const m_a_1 = geom_mutual_arrangement(e1, e2, int_seg_1); // geom_edges_intersect_on_segment
 	auto const m_a_2 = geom_mutual_arrangement(e1, e3, int_seg_2); //geom_edges_intersect_in_point
 	auto const m_a_3 = geom_mutual_arrangement(e1, e4, int_seg_3); // do not intesect
 
+	auto const m_a_4 = geom_mutual_arrangement(e1, e5, int_seg_4);
+	auto const m_a_5 = geom_mutual_arrangement(e1, e6, int_seg_5);
+	auto const m_a_6 = geom_mutual_arrangement(e1, e7, int_seg_6);
+	auto const m_a_7 = geom_mutual_arrangement(e1, e8, int_seg_7);
+
+
+
 	assert(m_a_1 == geom_edges_intersect_on_segment);
 	assert(m_a_2 == geom_edges_intersect_in_point);
 	assert(m_a_3 == geom_edges_do_not_intersect);
+
+	assert(m_a_4 == geom_edges_intersect_on_segment);
+	assert(m_a_5 == geom_edges_intersect_on_segment);
+	assert(m_a_6 == geom_edges_intersect_on_segment);
+	assert(m_a_7 == geom_edges_intersect_on_segment);
+
+
+
 
 	assert((int_seg_1.p.x == 0.5) && (int_seg_1.p.y == 0.5) && (int_seg_1.q.x == 0.7) && (int_seg_1.q.y == 0.7));
 	assert((int_seg_2.p.x == 0.5) && (int_seg_1.p.y == 0.5) && (int_seg_2.q.x == 0.5) && (int_seg_2.q.y == 0.5));
