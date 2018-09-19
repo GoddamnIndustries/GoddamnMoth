@@ -32,16 +32,16 @@ int main()
 
 
 	geom_e2d int_seg_1, int_seg_2, int_seg_3, int_seg_4, int_seg_5, int_seg_6, int_seg_7, int_seg_8;
-	auto const m_a_1 = geom_mutual_arrangement(e1, e2, int_seg_1); // geom_edges_intersect_on_segment
-	auto const m_a_2 = geom_mutual_arrangement(e1, e3, int_seg_2); //geom_edges_intersect_in_point
-	auto const m_a_3 = geom_mutual_arrangement(e1, e4, int_seg_3); // do not intesect
+	auto const m_a_1 = geom_edge_intersection(e1, e2, int_seg_1); // geom_edges_intersect_on_segment
+	auto const m_a_2 = geom_edge_intersection(e1, e3, int_seg_2); //geom_edges_intersect_in_point
+	auto const m_a_3 = geom_edge_intersection(e1, e4, int_seg_3); // do not intesect
 
-	auto const m_a_4 = geom_mutual_arrangement(e1, e5, int_seg_4);
-	auto const m_a_5 = geom_mutual_arrangement(e1, e6, int_seg_5);
-	auto const m_a_6 = geom_mutual_arrangement(e1, e7, int_seg_6);
-	auto const m_a_7 = geom_mutual_arrangement(e1, e8, int_seg_7);
+	auto const m_a_4 = geom_edge_intersection(e1, e5, int_seg_4);
+	auto const m_a_5 = geom_edge_intersection(e1, e6, int_seg_5);
+	auto const m_a_6 = geom_edge_intersection(e1, e7, int_seg_6);
+	auto const m_a_7 = geom_edge_intersection(e1, e8, int_seg_7);
 
-	auto const m_a_8 = geom_mutual_arrangement(e10, e9, int_seg_8);
+	auto const m_a_8 = geom_edge_intersection(e10, e9, int_seg_8);
 
 
 
@@ -83,9 +83,9 @@ int main()
 
 	geom_clip(&p, &b);
 	geom_union(&p, &b);
-	p.print("A.txt");
+	//p.print("A.txt");
 
-//	p.plot();
+	p.plot();
 
 
 	//int a = fork();
