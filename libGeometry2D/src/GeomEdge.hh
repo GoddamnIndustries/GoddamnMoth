@@ -5,11 +5,12 @@
 #include <cassert>
 #include <cfloat>
 #include <cmath>
+#include <memory>
 
 
 using geom_real_t = double;
 template <typename T>
-T sgn(T val) {
+int sgn(T val) {
 	return (T(0) < val) - (val < T(0));
 }
 
@@ -32,6 +33,46 @@ struct geom_p2d
 	bool operator != (const geom_p2d& p) const
 	{
 		return (x != p.x) || (y != p.y);
+	}
+	geom_p2d operator- (const geom_p2d& p) const
+	{
+		return { x - p.x, y - p.y };
+	}
+	geom_p2d operator+ (const geom_p2d& p) const
+	{
+		return { x + p.x, y + p.y };
+	}
+	friend geom_p2d operator*(geom_real_t a, const geom_p2d& p)
+	{
+		return {a * p.x, a * p.y};
+	}
+
+	static geom_p2d max(const geom_p2d& p1, const geom_p2d& p2)
+    {
+        return { std::max(p1.x, p2.x), std::max(p1.y, p2.y) };
+    }
+    static geom_p2d min(const geom_p2d& p1, const geom_p2d& p2)
+    {
+        return { std::min(p1.x, p2.x), std::min(p1.y, p2.y) };
+    }
+
+    static geom_p2d normal(const geom_p2d& p1)
+    {
+	    return {p1.y, -p1.x};
+    }
+
+	static geom_real_t dot(const geom_p2d& p1, const geom_p2d& p2)
+	{
+		return p1.x * p2.x + p1.y * p2.y;
+	}
+    static geom_real_t len(const geom_p2d& p1)
+    {
+	    return sqrt(dot(p1, p1));
+    }
+
+    static geom_real_t det(const geom_p2d& v1, const geom_p2d& v2)
+	{
+		return v1.x * v2.y - v2.x * v1.y ;
 	}
 };	// struct geom_p2d
 
@@ -60,121 +101,69 @@ struct geom_e2d
 		if(det != 0) // p is not on the line [s,t]
 			return false;
 
-		if( (p.x >= std::min(s.x, t.x)) && (p.x <= std::max(s.x, t.x)) &&
-			(p.y >= std::min(s.y, t.y)) && (p.y <= std::max(s.y, t.y)) )
-			return true;
-		return false;
-	}
+        return (p.x >= std::min(s.x, t.x)) && (p.x <= std::max(s.x, t.x)) &&
+               (p.y >= std::min(s.y, t.y)) && (p.y <= std::max(s.y, t.y));
+    }
+
 };	// struct geom_e2d
 
-static bool
-geom_edge_contains(const geom_e2d& e, const geom_p2d& p)
+struct geom_e2d_list : public geom_p2d
 {
-	const geom_real_t det = (e.t.x - e.s.x) * (p.y - e.s.y) - 
-							(e.t.y - e.s.y) * (p.x - e.s.x);
-	if (det != 0.0)
-	{
-		// 'p' is on the line 'e[s,t]'.
-		return p.x >= std::min(e.s.x, e.t.x) && p.x <= std::max(e.s.x, e.t.x) &&
-			   p.y >= std::min(e.s.y, e.t.y) && p.y <= std::max(e.s.y, e.t.y);
-	}
-	return false;
-}
+    geom_e2d_list* next = this;
+    geom_e2d_list* next_in = nullptr;
+    geom_e2d_list* next_out = nullptr;
+    geom_e2d edge() const { return { *this, *next }; }
+    void insert(const geom_p2d& p)
+    {
+        auto* n = new geom_e2d_list{};
+        (geom_p2d&)*n = p;
+        n->next = next;
+        next = n;
+    }
 
-enum geom_edge_arrangement_t
+
+    static int orientation(const geom_e2d_list* E);
+
+    static bool contains(const geom_e2d_list* E, const geom_p2d& p);
+
+    static void clip(geom_e2d_list* E1, geom_e2d_list* E2);
+};  // struct geom_e2d_list
+
+enum geom_c2d_type
 {
-	geom_edges_do_not_intersect,
-	geom_edges_intersect_in_point,
-	geom_edges_intersect_on_segment,
-};	// enum geom_edge_arrangement_t
+	GEOM_C2D_NONE,
+    GEOM_C2D_TOUCH,
+	GEOM_C2D_INTERSECT,
+};	// enum geom_c2d_type
 
-///
-/// Returns of the mutual arrangement of two segments.
-///
-static
-geom_edge_arrangement_t
-geom_edge_intersection(const geom_e2d& e1, const geom_e2d& e2, geom_e2d& e_int)
+enum geom_c2d_dirc_type
 {
-	const geom_real_t c_x = e1.t.x - e1.s.x;
-	const geom_real_t c_y = e1.t.y - e1.s.y;
-	const geom_real_t d_x = e2.t.x - e2.s.x;
-	const geom_real_t d_y = e2.t.y - e2.s.y;
+    GEOM_C2D_DIRECTION_NONE,
+    GEOM_C2D_DIRECTION_IN,
+    GEOM_C2D_DIRECTION_OUT,
+};  // enum geom_c2d_dirc_type
 
-	const geom_real_t det = d_x * c_y - c_x * d_y;
-	if(det != 0)
-	{
-		/*
-		 * Edges intersect (are not collinear).
-		 */
-		auto const b1 = e2.s.x - e1.s.x;
-		auto const b2 = e2.s.y - e1.s.y;
+struct geom_c2d_list
+{
+    geom_c2d_type type{};
+    geom_c2d_dirc_type direction{};
+    geom_e2d e{};
+    geom_c2d_list* next = nullptr;
+    ~geom_c2d_list()
+    {
+        delete next;
+    }
+};  // struct geom_c2d_list
 
-		double const alpha = 1 / det * (-b1 * d_y + b2 * d_x);
-		double const beta = 1 / det * (c_x * b2 - b1 * c_y);
-		if(alpha >= 0 && alpha <= 1 && 
-			beta >= 0 && beta <= 1)
-		{
-			e_int.s = e_int.t = geom_p2d{ e1.s.x + alpha * c_x, e1.s.y + alpha * c_y };
-			return geom_edges_intersect_in_point;
-		}
-		else
-		{
-			e_int.s = e_int.t = geom_p2d{ HUGE_VAL, HUGE_VAL };
-			return geom_edges_do_not_intersect;
-		}
-	}
-	else
-	{
-		//colinear
+void
+geom_collide(const geom_e2d &e1, const geom_e2d &e2, geom_c2d_list* collision);
 
-		geom_e2d e2_reor;
-		if( ((e1.t.x - e1.s.x) * (e2.t.x - e2.s.x) + (e1.t.y - e1.s.y) * (e2.t.y - e2.s.y)) < 0 )
-		{
-			e2_reor.s = e2.t;
-			e2_reor.t = e2.s;
-		}
-		else
-			e2_reor = e2;
-		if(e1.if_point_on_segment(e2_reor.s))
-		{
-			if(e1.if_point_on_segment(e2_reor.t))
-			{
-				// p_1 ----- p_2 ------- q_2 ------ q_1
-				e_int.s = e2_reor.s;
-				e_int.t = e2_reor.t;
-				return geom_edges_intersect_on_segment;
-			}
-			else if(e2_reor.if_point_on_segment(e1.t))
-			{
-				// p_1 --------- p_2 -------- q_1 --------- q_2
-				e_int.s = e2_reor.s;
-				e_int.t = e1.t;
-				return geom_edges_intersect_on_segment;
-			}
-			else
-				throw 1; /// @todo to be removed, just for debugging
-		}
-		else if(e2_reor.if_point_on_segment(e1.s))
-		{
-			if(e2_reor.if_point_on_segment(e1.t))
-			{
-				// p_2 ----- p_1 ------- q_1 ------ q_2
-				e_int.s = e1.s;
-				e_int.t = e1.t;
-				return geom_edges_intersect_on_segment;
-			}
-			else if(e1.if_point_on_segment(e2_reor.t))
-			{
-				// p_2 ------ p_1 ------q_2 ----- q_1
-				e_int.s = e1.s;
-				e_int.t = e2_reor.t;
-				return geom_edges_intersect_on_segment;
-			}
-			else
-				throw 1; /// @todo to be removed, just for debugging
-
-		}
-		else
-			return geom_edges_do_not_intersect;
-	}
+inline
+geom_c2d_type
+geom_collide(const geom_e2d &e1, const geom_e2d &e2, geom_e2d& e_int)
+{
+    geom_c2d_list collision{};
+    geom_collide(e1, e2, &collision);
+    e_int = collision.e;
+    return collision.type;
 }

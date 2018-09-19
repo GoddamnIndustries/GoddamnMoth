@@ -63,8 +63,8 @@ public:
 //				++inters_counter;
 
 			geom_e2d int_e;
-			auto const mutual_arrangement_type = geom_edge_intersection(line_from_point, line, int_e);
-			if(mutual_arrangement_type == geom_edges_intersect_in_point)
+			auto const mutual_arrangement_type = geom_collide(line_from_point, line, int_e);
+			if(mutual_arrangement_type == GEOM_C2D_INTERSECT)
 				++inters_counter;
 
 			list_iter = list_iter->next;
@@ -121,14 +121,14 @@ void geom_clip(geom_polygon2d* A, geom_polygon2d* B)
 
 			geom_e2d int_edge;
 
-			auto const mutual_arr_type = geom_edge_intersection(A_edge_seg, B_edge_seg, int_edge);
+			auto const mutual_arr_type = geom_collide(A_edge_seg, B_edge_seg, int_edge);
 
 //			bool intersects = A_edge_seg.if_point_on_segment(s);
 //			intersects &= B_edge_seg.if_point_on_segment(s);
 
 			bool intersects = false;
 			geom_p2d p;
-			if(mutual_arr_type == geom_edges_intersect_in_point)
+			if(mutual_arr_type == GEOM_C2D_INTERSECT)
 			{
 				p = int_edge.s;
 				intersects = true;
