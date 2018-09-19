@@ -63,9 +63,10 @@ int main()
 
 
 	geom_polygon2d p({ 0.0, 0.0 });
-	p.insert_back({ 0.0, 4.0 });
-	p.insert_back({ 4.0, 4.0 });
 	p.insert_back({ 4.0, 0.0 });
+	p.insert_back({ 4.0, 4.0 });
+	p.insert_back({ 0.0, 4.0 });
+
 
 	geom_p2d p1 = {3.0, 1.0};
 	geom_p2d p2 = {5.0, 3.0};
@@ -74,18 +75,17 @@ int main()
 	assert(!p.is_internal(p2));
 
 
-
 	geom_polygon2d b({ 3.0, 1.0 });
-	b.insert_back({ 3.0, 3.0 });
-	b.insert_back({ 5.0, 3.0 });
 	b.insert_back({ 5.0, 1.0 });
+	b.insert_back({ 5.0, 3.0 });
+	b.insert_back({ 3.0, 3.0 });
 
 
 	geom_clip(&p, &b);
 	geom_union(&p, &b);
-	//s.print("A.txt");
+	p.print("A.txt");
 
-	p.plot();
+//	p.plot();
 
 
 	//int a = fork();

@@ -4,8 +4,7 @@
 #include <fstream>
 #include <cassert>
 #include <cfloat>
-
-
+#include <cmath>
 
 
 using geom_real_t = double;
