@@ -82,21 +82,26 @@ static
 geom_edge_mutual_arrangement_t
 geom_mutual_arrangement(const geom_e2d& e1, const geom_e2d& e2, geom_e2d& intersection_segment)
 {
-	std::array<double, 2> c_vec = { e1.q.x - e1.p.x, e1.q.y - e1.p.y };
-	std::array<double, 2> d_vec = { e2.q.x - e2.p.x, e2.q.y - e2.p.y };
 
-	auto const det = -c_vec[0] * d_vec[1] + d_vec[0] * c_vec[1];
 
-	if(det != 0) //not colinear
+	double const c_vec_0 = e1.q.x - e1.p.x;
+	double const c_vec_1 = e1.q.y - e1.p.y;
+	double const d_vec_0 = e2.q.x - e2.p.x;
+	double const d_vec_1 = e2.q.y - e2.p.y;
+
+	auto const det = -c_vec_0 * d_vec_1 + d_vec_0 * c_vec_1;
+
+	if(det != 0)
 	{
+		//not colinear
 		auto const b1 = e2.p.x - e1.p.x;
 		auto const b2 = e2.p.y - e1.p.y;
 
-		double const alpha = 1 / det * (-b1 * d_vec[1] + b2 * d_vec[0]);
+		double const alpha = 1 / det * (-b1 * d_vec_1 + b2 * d_vec_0);
 
 		if( (alpha >= 0) && (alpha <= 1) )
 		{
-			geom_p2d const int_p(e1.p.x + alpha * c_vec[0], e1.p.y + alpha * c_vec[1]);
+			geom_p2d const int_p(e1.p.x + alpha * c_vec_0, e1.p.y + alpha * c_vec_1);
 			intersection_segment.p = int_p;
 			intersection_segment.q = int_p;
 			return geom_edges_intersect_in_point;
@@ -104,45 +109,51 @@ geom_mutual_arrangement(const geom_e2d& e1, const geom_e2d& e2, geom_e2d& inters
 		else
 			return geom_edges_do_not_intersect;
 	}
-	else // colinear
+	else
 	{
-		geom_e2d e2_reoriented;
+		//colinear
+
+		geom_e2d e2_reor;
 		if( ((e1.q.x - e1.p.x) * (e2.q.x - e2.p.x) + (e1.q.y - e1.p.y) * (e2.q.y - e2.p.y)) < 0 )
 		{
-			e2_reoriented.p = e2.q;
-			e2_reoriented.q = e2.p;
+			e2_reor.p = e2.q;
+			e2_reor.q = e2.p;
 		}
 		else
-			e2_reoriented = e2;
-		if(e1.if_point_on_segment(e2_reoriented.p))
+			e2_reor = e2;
+		if(e1.if_point_on_segment(e2_reor.p))
 		{
-			if(e1.if_point_on_segment(e2_reoriented.q)) // p_1 ----- p_2 ------- q_2 ------ q_1
+			if(e1.if_point_on_segment(e2_reor.q))
 			{
-				intersection_segment.p = e2_reoriented.p;
-				intersection_segment.q = e2_reoriented.q;
+				// p_1 ----- p_2 ------- q_2 ------ q_1
+				intersection_segment.p = e2_reor.p;
+				intersection_segment.q = e2_reor.q;
 				return geom_edges_intersect_on_segment;
 			}
-			else if(e2_reoriented.if_point_on_segment(e1.q)) // p_1 --------- p_2 -------- q_1 --------- q_2
+			else if(e2_reor.if_point_on_segment(e1.q))
 			{
-				intersection_segment.p = e2_reoriented.p;
+				// p_1 --------- p_2 -------- q_1 --------- q_2
+				intersection_segment.p = e2_reor.p;
 				intersection_segment.q = e1.q;
 				return geom_edges_intersect_on_segment;
 			}
 			else
-				throw 1;
+				throw 1; /// @todo to be removed, just for debugging
 		}
-		else if(e2_reoriented.if_point_on_segment(e1.p))
+		else if(e2_reor.if_point_on_segment(e1.p))
 		{
-			if(e2_reoriented.if_point_on_segment(e1.q)) // p_2 ----- p_1 ------- q_1 ------ q_2
+			if(e2_reor.if_point_on_segment(e1.q))
 			{
+				// p_2 ----- p_1 ------- q_1 ------ q_2
 				intersection_segment.p = e1.p;
 				intersection_segment.q = e1.q;
 				return geom_edges_intersect_on_segment;
 			}
-			else if(e1.if_point_on_segment(e2_reoriented.q)) // p_2 ------ p_1 ------q_2 ----- q_1
+			else if(e1.if_point_on_segment(e2_reor.q))
 			{
+				// p_2 ------ p_1 ------q_2 ----- q_1
 				intersection_segment.p = e1.p;
-				intersection_segment.q = e2_reoriented.q;
+				intersection_segment.q = e2_reor.q;
 				return geom_edges_intersect_on_segment;
 			}
 			else
