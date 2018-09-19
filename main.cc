@@ -58,8 +58,8 @@ int main()
 	assert(m_a_8 == geom_edges_do_not_intersect);
 
 
-	assert((int_seg_1.p.x == 0.5) && (int_seg_1.p.y == 0.5) && (int_seg_1.q.x == 0.7) && (int_seg_1.q.y == 0.7));
-	assert((int_seg_2.p.x == 0.5) && (int_seg_1.p.y == 0.5) && (int_seg_2.q.x == 0.5) && (int_seg_2.q.y == 0.5));
+	assert((int_seg_1.s.x == 0.5) && (int_seg_1.s.y == 0.5) && (int_seg_1.t.x == 0.7) && (int_seg_1.t.y == 0.7));
+	assert((int_seg_2.s.x == 0.5) && (int_seg_1.s.y == 0.5) && (int_seg_2.t.x == 0.5) && (int_seg_2.t.y == 0.5));
 
 
 	geom_polygon2d p({ 0.0, 0.0 });
@@ -83,7 +83,7 @@ int main()
 
 	geom_clip(&p, &b);
 	geom_union(&p, &b);
-	//p.print("A.txt");
+	//s.print("A.txt");
 
 	p.plot();
 

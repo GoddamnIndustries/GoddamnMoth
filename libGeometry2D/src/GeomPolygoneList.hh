@@ -87,8 +87,8 @@ public:
 		do
 		{
 			auto edge = list_iter->make_line();
-			file << edge.p.x << " " << edge.p.y << std::endl;
-			file << edge.q.x << " " << edge.q.y << std::endl;
+			file << edge.s.x << " " << edge.s.y << std::endl;
+			file << edge.t.x << " " << edge.t.y << std::endl;
 			file << std::endl;
 
 			list_iter = list_iter->next;
@@ -117,34 +117,34 @@ void geom_clip(geom_polygon2d* A, geom_polygon2d* B)
 			auto const A_edge_seg = A_iter->make_line();
 			auto const B_edge_seg = B_iter->make_line();
 
-//			auto p = geom_intersects_p(A_edge_seg, B_edge_seg);
+//			auto s = geom_intersects_p(A_edge_seg, B_edge_seg);
 
 			geom_e2d int_edge;
 
 			auto const mutual_arr_type = geom_edge_intersection(A_edge_seg, B_edge_seg, int_edge);
 
-//			bool intersects = A_edge_seg.if_point_on_segment(p);
-//			intersects &= B_edge_seg.if_point_on_segment(p);
+//			bool intersects = A_edge_seg.if_point_on_segment(s);
+//			intersects &= B_edge_seg.if_point_on_segment(s);
 
 			bool intersects = false;
 			geom_p2d p;
 			if(mutual_arr_type == geom_edges_intersect_in_point)
 			{
-				p = int_edge.p;
+				p = int_edge.s;
 				intersects = true;
-				intersects &= p != A_edge_seg.p;
-				intersects &= p != A_edge_seg.q;
-				intersects &= p != B_edge_seg.p;
-				intersects &= p != B_edge_seg.q;
+				intersects &= p != A_edge_seg.s;
+				intersects &= p != A_edge_seg.t;
+				intersects &= p != B_edge_seg.s;
+				intersects &= p != B_edge_seg.t;
 			}
 			if (intersects)
 			{
-				bool const n_0 = A->is_internal(B_edge_seg.p);
-				if((B_edge_seg.q.x == 3) && (B_edge_seg.q.y == 1))
+				bool const n_0 = A->is_internal(B_edge_seg.s);
+				if((B_edge_seg.t.x == 3) && (B_edge_seg.t.y == 1))
 				{
 					double a = 0.0;
 				}
-				bool const n_1 = A->is_internal(B_edge_seg.q);
+				bool const n_1 = A->is_internal(B_edge_seg.t);
 				assert(n_0 ^ n_1);
 
 				A_iter->insert(p);
