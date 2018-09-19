@@ -16,9 +16,9 @@
 
 int main()
 {
-	geom_line_2d first(geom_point_2d(0,0), geom_point_2d(1, 1));
-	geom_line_2d second(geom_point_2d(1, 1), geom_point_2d(2, 0));
-	geom_line_2d third(geom_point_2d(2, 0), geom_point_2d(0,0));
+	geom_line_2d first(geom_p2d(0,0), geom_p2d(1, 1));
+	geom_line_2d second(geom_p2d(1, 1), geom_p2d(2, 0));
+	geom_line_2d third(geom_p2d(2, 0), geom_p2d(0,0));
 
 	std::vector<geom_line_2d> line_v;
 	line_v.emplace_back(first);
@@ -27,7 +27,7 @@ int main()
 
 	geom_convex_shape shape(line_v);
 
-	geom_point_2d point(1.0, 0.5);
+	geom_p2d point(1.0, 0.5);
 
 	std::cout << shape.is_internal(point) << std::endl;
 
