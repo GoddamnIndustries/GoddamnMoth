@@ -4,5 +4,4 @@ project(GoddamnOpuwenijSolver)
 set(CMAKE_CXX_STANDARD 14)
 
 add_executable(GoddamnOpuwenijSolver main.cc 
-			libGeometry2D/src/GeomPolygoneList.hh
-			libPosix/src/PosixFork.cc)
+			libGeometry2D/src/GeomPolygoneList.hh)

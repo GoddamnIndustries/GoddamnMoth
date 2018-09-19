@@ -3,6 +3,7 @@
 #include <array>
 #include <fstream>
 #include <cassert>
+#include <cfloat>
 
 using geom_real_t = double;
 template <typename T> 
@@ -22,8 +23,11 @@ struct geom_p2d
 	geom_real_t x;
 	geom_real_t y;
 
+	geom_p2d(geom_real_t X = 0.0, geom_real_t Y = 0.0): x(X), y(Y)
+	{}
+
 	/// @todo To be removed.
-	bool operator!= (const geom_p2d& p) const
+	bool operator != (const geom_p2d& p) const
 	{
 		return x != p.x && y != p.y;
 	}
@@ -43,27 +47,26 @@ struct geom_e2d
 	geom_p2d p;
 	geom_p2d q;
 
+	geom_e2d(): p(), q()
+	{}
+	geom_e2d(geom_p2d const& point1, geom_p2d const& point2): p(point1), q(point2)
+	{}
 	/// @todo To be removed.
 	bool if_point_on_segment(geom_p2d const& point) const
 	{
-		// Fixed.
-		if (q.x - p.x != 0.0) {
-			double const alpha = (point.x - p.x) / (q.x - p.x);
-			if ((alpha < 0) || (alpha > 1))
-				return false;
-			else
-				return true;
-		}
-		if (q.y - p.y != 0.0) {
-			double const alpha = (point.y - p.y) / (q.y - p.y);
-			if ((alpha < 0) || (alpha > 1))
-				return false;
-			else
-				return true;
-		}
+		auto const det = (q.x - p.x) * (point.y - p.y) - (point.x - p.x) * (q.y - p.y);
+		if(det != 0) // point is not on the line [p,q]
+			return false;
+
+		if( (point.x >= std::min(p.x, q.x)) && (point.x <= std::max(p.x, q.x)) &&
+		(point.y >= std::min(p.y, q.y)) && (point.y <= std::max(p.y, q.y)) )
+			return true;
 		return false;
 	}
 };	// struct geom_e2d
+
+
+
 
 enum geom_edge_mutual_arrangement_t
 {
@@ -77,64 +80,72 @@ enum geom_edge_mutual_arrangement_t
 ///
 static 
 geom_edge_mutual_arrangement_t
-geom_mutual_arrangement(const geom_e2d& e1, const geom_e2d& e2)
-{
-	/// This classification is needed for correct clipping.
-	/// @todo Implements this based on the article https://www.geeksforgeeks.org/check-if-two-given-line-segments-intersect/
-#if 0
-	inline
-		geom_real_t
-		geom_orientation(const geom_p2d& p, const geom_p2d& q, const geom_p2d& r)
-	{
-		const auto prod = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
-		return sgn(prod);
-	}
-	inline
-		geom_real_t
-		geom_orientation(const geom_e2d& pq, const geom_p2d& r)
-	{
-		return geom_orientation(pq.p, pq.q, r);
-	}
-	inline
-		geom_real_t
-		geom_orientation(const geom_p2d& p, const geom_e2d& qr)
-	{
-		return geom_orientation(p, qr.p, qr.q);
-	}
-	inline
-		bool
-		geom_intersects(const geom_e2d& e1, const geom_e2d& e2)
-	{
-		const auto orient1 = geom_orientation(e1, e2.p);
-		const auto orient2 = geom_orientation(e1, e2.q);
-		const auto orient3 = geom_orientation(e2, e1.p);
-		const auto orient4 = geom_orientation(e2, e1.q);
-		if (orient1 != orient2 &&
-			orient3 != orient4) {
-			return true;
-		}
-
-		return false;
-	}
-#endif
-	return geom_edges_do_not_intersect;
-}
-
-static
-geom_p2d 
-geom_intersects_p(const geom_e2d& e1, const geom_e2d& e2)
+geom_mutual_arrangement(const geom_e2d& e1, const geom_e2d& e2, geom_e2d& intersection_segment)
 {
 	std::array<double, 2> c_vec = { e1.q.x - e1.p.x, e1.q.y - e1.p.y };
 	std::array<double, 2> d_vec = { e2.q.x - e2.p.x, e2.q.y - e2.p.y };
 
 	auto const det = -c_vec[0] * d_vec[1] + d_vec[0] * c_vec[1];
-	auto const b1 = e2.p.x - e1.p.x;
-	auto const b2 = e2.p.y - e1.p.y;
 
-	double const alpha = 1 / det * (-b1 * d_vec[1] + b2 * d_vec[0]);
+	if(det != 0) //not colinear
+	{
+		auto const b1 = e2.p.x - e1.p.x;
+		auto const b2 = e2.p.y - e1.p.y;
 
-	return { e1.p.x + alpha * c_vec[0], e1.p.y + alpha * c_vec[1] };
+		double const alpha = 1 / det * (-b1 * d_vec[1] + b2 * d_vec[0]);
+
+		if( (alpha >= 0) && (alpha <= 1) )
+		{
+			geom_p2d const int_p(e1.p.x + alpha * c_vec[0], e1.p.y + alpha * c_vec[1]);
+			intersection_segment.p = int_p;
+			intersection_segment.q = int_p;
+			return geom_edges_intersect_in_point;
+		}
+		else
+			return geom_edges_do_not_intersect;
+	}
+	else // colinear
+	{
+		if(e1.if_point_on_segment(e2.p))
+		{
+			if(e1.if_point_on_segment(e2.q)) // p_1 ----- p_2 ------- q_2 ------ q_1
+			{
+				intersection_segment.p = e2.p;
+				intersection_segment.q = e2.q;
+				return geom_edges_intersect_on_segment;
+			}
+			else if(e2.if_point_on_segment(e1.q)) // p_1 --------- p_2 -------- q_1 --------- q_2
+			{
+				intersection_segment.p = e2.p;
+				intersection_segment.q = e1.q;
+				return geom_edges_intersect_on_segment;
+			}
+			else
+				throw 1; /// @todo to be removed, just for debugging
+		}
+		else if(e2.if_point_on_segment(e1.p))
+		{
+			if(e2.if_point_on_segment(e1.q)) // p_2 ----- p_1 ------- q_1 ------ q_2
+			{
+				intersection_segment.p = e1.p;
+				intersection_segment.q = e1.q;
+				return geom_edges_intersect_on_segment;
+			}
+			else if(e1.if_point_on_segment(e2.q)) // p_2 ------ p_1 ------q_2 ----- q_1
+			{
+				intersection_segment.p = e1.p;
+				intersection_segment.q = e2.q;
+				return geom_edges_intersect_on_segment;
+			}
+			else
+				throw 1; /// @todo to be removed, just for debugging
+
+		}
+		else
+			return geom_edges_do_not_intersect;
+	}
 }
+
 
 #if 1
 class geom_polygon2d //: public std::enable_shared_from_this<geom_polygon2d>
@@ -165,14 +176,20 @@ public:
 
 	bool is_internal(const geom_p2d& point) const
 	{
-		geom_e2d line_from_point{ point, {point.x + 1.0, point.y} };
+		static double const d = DBL_MAX;
+		geom_e2d line_from_point{ point, {point.x + d, point.y} };
 		unsigned inters_counter = 0;
 		auto list_iter = this;
 		do
 		{
 			auto line = list_iter->make_line();
-			auto const inters_point = geom_intersects_p(line_from_point, line);
-			if ((inters_point.x > point.x) && (line.if_point_on_segment(inters_point)))
+//			auto const inters_point = geom_intersects_p(line_from_point, line);
+//			if ((inters_point.x > point.x) && (line.if_point_on_segment(inters_point)))
+//				++inters_counter;
+
+			geom_e2d int_e;
+			auto const mutual_arrangement_type = geom_mutual_arrangement(line_from_point, line, int_e);
+			if(mutual_arrangement_type == geom_edges_intersect_in_point)
 				++inters_counter;
 
 			list_iter = list_iter->next;
@@ -184,10 +201,6 @@ public:
 		return true;
 	}
 
-	geom_p2d get_point() const
-	{
-		return point;
-	}
 
 	void print(std::string const& filepath) const
 	{
@@ -212,29 +225,12 @@ public:
 	{
 		print("A.txt");
 		system("gnuplot -e \"plot 'A.txt' with lines; pause -1;\"");
-		remove("A.txt");
+//		remove("A.txt");
 	}
 
-	void set_other_in(geom_polygon2d* const list)
-	{
-		other_in = list;
-	}
-	void set_other_out(geom_polygon2d* const list)
-	{
-		other_out = list;
-	}
-
-	geom_polygon2d* get_other_in() const
-	{
-		return other_in;
-	}
-
-	geom_polygon2d* get_other_out() const
-	{
-		return other_out;
-	}
 };
 
+/*
 void geom_clip(geom_polygon2d* A, geom_polygon2d* B)
 {
 	auto A_iter = A;
@@ -265,13 +261,13 @@ void geom_clip(geom_polygon2d* A, geom_polygon2d* B)
 
 				if (n_0 && !n_1)
 				{
-					A_iter->next->set_other_out(B_iter->next);
-					B_iter->next->set_other_in(A_iter->next);
+					A_iter->next->other_out = B_iter->next;
+					B_iter->next->other_in = A_iter->next;
 				}
 				else
 				{
-					A_iter->next->set_other_in(B_iter->next);
-					B_iter->next->set_other_out(A_iter->next);
+					A_iter->next->other_in = B_iter->next;
+					B_iter->next->other_out = A_iter->next;
 				}
 
 				break;
@@ -283,9 +279,10 @@ void geom_clip(geom_polygon2d* A, geom_polygon2d* B)
 
 		A_iter = A_iter->next;
 	} while (A_iter != A);
-}
+} */
 #endif
 
+/*
 void geom_minus(geom_polygon2d* A, geom_polygon2d* B)
 {
 	auto A_iter = A;
@@ -297,3 +294,4 @@ void geom_minus(geom_polygon2d* A, geom_polygon2d* B)
 		A_iter = A_iter->next;
 	} while (A_iter != A);
 }
+*/
