@@ -80,12 +80,20 @@ int main()
 	b.insert_back({ 5.0, 3.0 });
 	b.insert_back({ 5.0, 1.0 });
 
-
 	geom_clip(&p, &b);
-	geom_union(&p, &b);
-	//s.print("A.txt");
+	geom_minus(&p, &b);
+	p.print("A.txt");
 
-	p.plot();
+/*	geom_polygon2d c({2.0, 1.0});
+	b.insert_back({ 2.0, 2.0 });
+	b.insert_back({ 3.0, 2.0 });
+	b.insert_back({ 3.0, 1.0 });
+
+	geom_clip(&p, &c);
+	geom_minus(&p, &c);
+	p.print("A.txt");
+*/
+//	p.plot();
 
 
 	//int a = fork();

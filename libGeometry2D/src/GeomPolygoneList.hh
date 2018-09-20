@@ -19,12 +19,23 @@ public:
 	{}
 
 
-	void insert(geom_p2d const& p)
+
+	void insert_next(geom_p2d const &p)
 	{
 		auto new_pol_list = new geom_polygon2d(p);
 		new_pol_list->next = next;
 		next = new_pol_list;
 	}
+
+	void remove_next()
+	{
+		auto node = next;
+		next = node->next;
+		node->next = node;
+		delete node;
+	}
+
+
 
 	void insert_back(geom_p2d const& p)
 	{
@@ -33,8 +44,10 @@ public:
 		{
 			list_iter = list_iter->next;
 		}
-		list_iter->insert(p);
+		list_iter->insert_next(p);
 	}
+
+
 
 	geom_e2d make_line() const
 	{
@@ -100,7 +113,7 @@ public:
 	{
 		print("A.txt");
 		system("gnuplot -e \"plot 'A.txt' with lines; pause -1;\"");
-//		remove("A.txt");
+		remove("A.txt");
 	}
 
 };
@@ -165,8 +178,8 @@ void geom_clip(geom_polygon2d* A, geom_polygon2d* B)
 				bool const n_1 = A->is_internal(B_edge_seg.t);
 				assert(n_0 ^ n_1);
 
-				A_iter->insert(p);
-				B_iter->insert(p);
+				A_iter->insert_next(p);
+				B_iter->insert_next(p);
 
 				if (n_0 && !n_1)
 				{
@@ -192,6 +205,7 @@ void geom_clip(geom_polygon2d* A, geom_polygon2d* B)
 #endif
 
 
+
 void geom_union(geom_polygon2d *A, geom_polygon2d *B)
 {
 	auto A_iter = A;
@@ -202,4 +216,46 @@ void geom_union(geom_polygon2d *A, geom_polygon2d *B)
 
 		A_iter = A_iter->next;
 	} while (A_iter != A);
+}
+
+geom_polygon2d* geom_polygon_orientation_change(geom_polygon2d* A)
+{
+	geom_polygon2d* curr = A;
+	geom_polygon2d* next = nullptr;
+	geom_polygon2d* prev = nullptr;
+
+	while(curr->next != A)
+	{
+		//Saving next
+		next = curr->next;
+		//Reverting
+		curr->next = prev;
+
+		//Iteration
+		prev = curr;
+		curr = next;
+	}
+	curr->next = prev;
+	A->next = curr;
+	return curr;
+}
+
+void geom_minus(geom_polygon2d *A, geom_polygon2d *B)
+{
+	auto B_iter = B;
+	bool B_inside_A = true;
+	do
+	{
+		B_inside_A &= A->is_internal(B_iter->point);
+		B_iter = B_iter->next;
+	} while(B_iter != B);
+	auto C = geom_polygon_orientation_change(B);
+	if(!B_inside_A)
+	{
+		geom_union(A, C);
+	}
+	else
+	{
+		///@todo implement
+	}
 }
