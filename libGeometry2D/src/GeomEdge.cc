@@ -1,6 +1,39 @@
 #include "GeomEdge.hh"
 #include "../../libLinearAlgebra/src/Test.h"
 
+template <typename T>
+int sgn(T val)
+{
+    return (T(0) < val) - (val < T(0));
+}
+
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
+/// @todo Move to header one day.
+struct geom_e2d_list : public geom_p2d
+{
+    geom_e2d_list* next = this;
+    geom_e2d_list* next_in = nullptr;
+    geom_e2d_list* next_out = nullptr;
+    geom_e2d edge() const { return { *this, *next }; }
+
+    void insert(const geom_p2d& p)
+    {
+        auto* n = new geom_e2d_list{};
+        (geom_p2d&)*n = p;
+        n->next = next;
+        next = n;
+    }
+
+
+    static int orientation(const geom_e2d_list* E);
+
+    static bool contains(const geom_e2d_list* E, const geom_p2d& p);
+
+    static void clip(geom_e2d_list* E1, geom_e2d_list* E2);
+};  // struct geom_e2d_list
+
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
@@ -42,7 +75,7 @@ geom_collide(const geom_e2d& e1, const geom_e2d& e2, geom_c2d_list* collision)
 
             // Edges intersection direction.
             const geom_p2d n1 = collision->e.s - e1.s;
-            const geom_p2d n2 = collision->e.s - e1.s;
+            const geom_p2d n2 = collision->e.s - e2.s;
             if (geom_p2d::dot(n1, geom_p2d::normal(n2)) > 0.0)
             {
                 collision->direction = GEOM_C2D_DIRECTION_IN;
@@ -66,6 +99,7 @@ geom_collide(const geom_e2d& e1, const geom_e2d& e2, geom_c2d_list* collision)
             {
                 collision->e.s = geom_p2d::max(geom_p2d::min(e2.s, e2.t), geom_p2d::min(e1.s, e1.t));
                 collision->e.t = geom_p2d::min(geom_p2d::max(e2.s, e2.t), geom_p2d::max(e1.s, e1.t));
+                collision->direction = GEOM_C2D_DIRECTION_NONE;
                 if (geom_p2d::len(q1) * geom_p2d::len(q2) != 0.0)
                 {
                     collision->type = GEOM_C2D_TOUCH;
