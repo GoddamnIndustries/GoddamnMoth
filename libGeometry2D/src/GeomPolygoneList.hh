@@ -105,6 +105,24 @@ public:
 
 };
 
+template <typename T>
+int sgn(T val)
+{
+	return (T(0) < val) - (val < T(0));
+}
+
+int
+geom_orientation(const geom_polygon2d* E)
+{
+	geom_real_t E_square = 0.0;
+	const geom_polygon2d* E_i = E;
+	do
+	{
+		const geom_polygon2d* E_ip = E->next;
+		E_square += geom_p2d::det(E_i->point, E_ip->point);
+	} while ((E_i = E_i->next) != E);
+	return sgn(E_square);
+}
 
 void geom_clip(geom_polygon2d* A, geom_polygon2d* B)
 {
