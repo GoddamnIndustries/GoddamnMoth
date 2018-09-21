@@ -63,9 +63,9 @@ int main()
 
 
 	geom_polygon2d p({ 0.0, 0.0 });
-	p.insert_back({ 0.0, 4.0 });
-	p.insert_back({ 4.0, 4.0 });
 	p.insert_back({ 4.0, 0.0 });
+	p.insert_back({ 4.0, 4.0 });
+	p.insert_back({ 0.0, 4.0 });
 
 	geom_p2d p1 = {3.0, 1.0};
 	geom_p2d p2 = {5.0, 3.0};
@@ -76,15 +76,17 @@ int main()
 
 
 	geom_polygon2d b({ 3.0, 1.0 });
-	b.insert_back({ 3.0, 3.0 });
-	b.insert_back({ 5.0, 3.0 });
 	b.insert_back({ 5.0, 1.0 });
+	b.insert_back({ 5.0, 3.0 });
+	b.insert_back({ 3.0, 3.0 });
 
-	geom_clip(&p, &b);
-	geom_minus(&p, &b);
-	p.print("A.txt");
+	geom_polygon2d b_buf, p_buf;
 
-/*	geom_polygon2d c({2.0, 1.0});
+	geom_clip(p, b, p_buf, b_buf);
+	auto res = geom_minus(p_buf, b_buf);
+	res.print("A.txt");
+
+/*	geom_vertex2d c({2.0, 1.0});
 	b.insert_back({ 2.0, 2.0 });
 	b.insert_back({ 3.0, 2.0 });
 	b.insert_back({ 3.0, 1.0 });

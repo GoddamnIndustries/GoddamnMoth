@@ -4,49 +4,41 @@
 
 
 #if 1
-class geom_polygon2d //: public std::enable_shared_from_this<geom_polygon2d>
+class geom_vertex2d //: public std::enable_shared_from_this<geom_vertex2d>
 {
 public:
 	geom_p2d point;
-	geom_polygon2d* next;
-	geom_polygon2d* other_in = nullptr;
-	geom_polygon2d* other_out = nullptr;
+	geom_vertex2d* next;
+	geom_vertex2d* other_in = nullptr;
+	geom_vertex2d* other_out = nullptr;
 
 
 public:
 
-	geom_polygon2d(geom_p2d const& p) : point(p), next(this)
+	geom_vertex2d(geom_p2d const& p) : point(p), next(this)
 	{}
-
 
 
 	void insert_next(geom_p2d const &p)
 	{
-		auto new_pol_list = new geom_polygon2d(p);
+		auto new_pol_list = new geom_vertex2d(p);
 		new_pol_list->next = next;
 		next = new_pol_list;
 	}
 
 	void remove_next()
 	{
+		assert(next != this);
+
 		auto node = next;
-		next = node->next;
-		node->next = node;
+
+		next = next->next;
+
+		node->next = nullptr;
+
 		delete node;
+
 	}
-
-
-
-	void insert_back(geom_p2d const& p)
-	{
-		auto list_iter = this;
-		while(list_iter->next != this)
-		{
-			list_iter = list_iter->next;
-		}
-		list_iter->insert_next(p);
-	}
-
 
 
 	geom_e2d make_line() const
@@ -54,20 +46,72 @@ public:
 		return { point, next->point };
 	}
 
+};
+
+class geom_polygon2d
+{
+
+public:
+	geom_vertex2d* head;
+
+
+public:
+
+	geom_polygon2d(): head(nullptr)
+	{}
+
+	geom_polygon2d(geom_p2d const& p): head(new geom_vertex2d(p))
+	{
+		head->next = head;
+	}
+
+/*	~geom_polygon2d()
+	{
+		if(head != nullptr)
+		{
+			while(head->next != head)
+			{
+				head->remove_next();
+			}
+			delete head;
+		}
+	}
+*/
+
+	void insert_back(geom_p2d const& p)
+	{
+
+		if(head != nullptr)
+		{
+			auto list_iter = head;
+			while (list_iter->next != head)
+			{
+				list_iter = list_iter->next;
+
+			}
+			list_iter->insert_next(p);
+		}
+		else
+		{
+			head = new geom_vertex2d(p);
+			head->next = head;
+		}
+	}
+
 	bool is_internal(const geom_p2d& point) const
 	{
 		double d = -1e6;
-		auto list_iter = this;
+		auto list_iter = head;
 		do
 		{
 			if(list_iter->point.x > d)
 				d = list_iter->point.x;
 			list_iter = list_iter->next;
-		} while (list_iter != this);
+		} while (list_iter != head);
 		geom_e2d line_from_point{ point, {point.x + d + 1.0, point.y} };
 		unsigned inters_counter = 0;
 
-		list_iter = this;
+		list_iter = head;
 		do
 		{
 			auto line = list_iter->make_line();
@@ -82,7 +126,7 @@ public:
 
 			list_iter = list_iter->next;
 
-		} while (list_iter != this);
+		} while (list_iter != head);
 
 		if ((inters_counter % 2) == 0)
 			return false;
@@ -90,12 +134,13 @@ public:
 	}
 
 
+
 	void print(std::string const& filepath) const
 	{
 		std::ofstream file;
 		file.open(filepath);
 
-		auto list_iter = this;
+		auto list_iter = head;
 
 		do
 		{
@@ -105,7 +150,7 @@ public:
 			file << std::endl;
 
 			list_iter = list_iter->next;
-		} while (list_iter != this);
+		} while (list_iter != head);
 
 	}
 
@@ -116,7 +161,24 @@ public:
 		remove("A.txt");
 	}
 
+
 };
+
+void geom_copy_polygon(geom_polygon2d const& source, geom_polygon2d& dest)
+{
+	auto iter = source.head;
+	assert(dest.head == nullptr);
+	do
+	{
+		// Only non-clipped polygons can be copied
+		assert(iter->other_in == nullptr);
+		assert(iter->other_out == nullptr);
+		dest.insert_back(iter->point);
+		iter = iter->next;
+
+	} while(iter != source.head);
+
+}
 
 template <typename T>
 int sgn(T val)
@@ -125,37 +187,37 @@ int sgn(T val)
 }
 
 int
-geom_orientation(const geom_polygon2d* E)
+geom_orientation(geom_polygon2d const& E)
 {
 	geom_real_t E_square = 0.0;
-	const geom_polygon2d* E_i = E;
+	const geom_vertex2d* E_i = E.head;
 	do
 	{
-		const geom_polygon2d* E_ip = E->next;
+		const geom_vertex2d* E_ip = E.head->next;
 		E_square += geom_p2d::det(E_i->point, E_ip->point);
-	} while ((E_i = E_i->next) != E);
+	} while ((E_i = E_i->next) != E.head);
 	return sgn(E_square);
 }
 
-void geom_clip(geom_polygon2d* A, geom_polygon2d* B)
+void geom_clip(geom_polygon2d const& A, geom_polygon2d const& B, geom_polygon2d& A_res, geom_polygon2d& B_res)
 {
-	auto A_iter = A;
+	geom_copy_polygon(A, A_res);
+	geom_copy_polygon(B, B_res);
+
+	auto A_iter = A_res.head;
 	do
 	{
-		auto B_iter = B;
+		auto B_iter = B_res.head;
 		do
 		{
 			auto const A_edge_seg = A_iter->make_line();
 			auto const B_edge_seg = B_iter->make_line();
 
-//			auto s = geom_intersects_p(A_edge_seg, B_edge_seg);
 
 			geom_e2d int_edge;
 
 			auto const mutual_arr_type = geom_collide(A_edge_seg, B_edge_seg, int_edge);
 
-//			bool intersects = A_edge_seg.if_point_on_segment(s);
-//			intersects &= B_edge_seg.if_point_on_segment(s);
 
 			bool intersects = false;
 			geom_p2d p;
@@ -170,12 +232,8 @@ void geom_clip(geom_polygon2d* A, geom_polygon2d* B)
 			}
 			if (intersects)
 			{
-				bool const n_0 = A->is_internal(B_edge_seg.s);
-				if((B_edge_seg.t.x == 3) && (B_edge_seg.t.y == 1))
-				{
-					double a = 0.0;
-				}
-				bool const n_1 = A->is_internal(B_edge_seg.t);
+				bool const n_0 = A_res.is_internal(B_edge_seg.s);
+				bool const n_1 = A_res.is_internal(B_edge_seg.t);
 				assert(n_0 ^ n_1);
 
 				A_iter->insert_next(p);
@@ -196,35 +254,49 @@ void geom_clip(geom_polygon2d* A, geom_polygon2d* B)
 			}
 
 			B_iter = B_iter->next;
-		} while (B_iter != B);
+		} while (B_iter != B_res.head);
 
 
 		A_iter = A_iter->next;
-	} while (A_iter != A);
+	} while (A_iter != A_res.head);
 }
 #endif
 
 
 
-void geom_union(geom_polygon2d *A, geom_polygon2d *B)
+geom_polygon2d geom_union(geom_polygon2d const&A, geom_polygon2d const &B)
 {
-	auto A_iter = A;
+/*	auto A_iter = A.head;
 	do
 	{
 		if (A_iter->other_out != nullptr)
 			A_iter->next = A_iter->other_out;
 
 		A_iter = A_iter->next;
-	} while (A_iter != A);
+	} while (A_iter != A.head);
+*/
+	geom_polygon2d result;
+	auto A_iter = A.head;
+	do
+	{
+		result.insert_back(A_iter->point);
+		if(A_iter->other_out == nullptr)
+			A_iter = A_iter->next;
+		else
+			A_iter = A_iter->other_out;
+
+	} while (A_iter != A.head);
+
+	return result;
 }
 
-geom_polygon2d* geom_polygon_orientation_change(geom_polygon2d* A)
+void geom_polygon_orientation_change(geom_polygon2d& A)
 {
-	geom_polygon2d* curr = A;
-	geom_polygon2d* next = nullptr;
-	geom_polygon2d* prev = nullptr;
+	geom_vertex2d* curr = A.head;
+	geom_vertex2d* next = nullptr;
+	geom_vertex2d* prev = nullptr;
 
-	while(curr->next != A)
+	while(curr->next != A.head)
 	{
 		//Saving next
 		next = curr->next;
@@ -235,27 +307,31 @@ geom_polygon2d* geom_polygon_orientation_change(geom_polygon2d* A)
 		prev = curr;
 		curr = next;
 	}
+
 	curr->next = prev;
-	A->next = curr;
-	return curr;
+	A.head->next = curr;
+	A.head = curr;
 }
 
-void geom_minus(geom_polygon2d *A, geom_polygon2d *B)
+geom_polygon2d geom_minus(geom_polygon2d const& A, geom_polygon2d& B)
 {
-	auto B_iter = B;
+	geom_polygon2d result;
+	auto B_iter = B.head;
 	bool B_inside_A = true;
 	do
 	{
-		B_inside_A &= A->is_internal(B_iter->point);
+		B_inside_A &= A.is_internal(B_iter->point);
 		B_iter = B_iter->next;
-	} while(B_iter != B);
-	auto C = geom_polygon_orientation_change(B);
+	} while(B_iter != B.head);
+
+	geom_polygon_orientation_change(B);
 	if(!B_inside_A)
 	{
-		geom_union(A, C);
+		result = geom_union(A, B);
 	}
 	else
 	{
 		///@todo implement
 	}
+	return result;
 }
