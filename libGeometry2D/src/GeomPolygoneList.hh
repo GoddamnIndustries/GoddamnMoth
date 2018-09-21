@@ -31,13 +31,10 @@ public:
 		assert(next != this);
 
 		auto node = next;
-
 		next = next->next;
 
-		node->next = nullptr;
-
+		node->next = node;
 		delete node;
-
 	}
 
 
@@ -65,7 +62,45 @@ public:
 		head->next = head;
 	}
 
-/*	~geom_polygon2d()
+	geom_polygon2d(geom_polygon2d const& other): head(nullptr)
+	{
+		auto iter = other.head;
+		do
+		{
+			// Only non-clipped polygons can be copied
+			assert(iter->other_in == nullptr);
+			assert(iter->other_out == nullptr);
+			insert_back(iter->point);
+			iter = iter->next;
+
+		} while(iter != other.head);
+	}
+
+	geom_polygon2d& operator=(geom_polygon2d const& other)
+	{
+		if(head != nullptr)
+		{
+			while (head->next != head)
+				head->remove_next();
+			delete head;
+			head = nullptr;
+		}
+		auto iter = other.head;
+		do
+		{
+			// Only non-clipped polygons can be copied
+			assert(iter->other_in == nullptr);
+			assert(iter->other_out == nullptr);
+			insert_back(iter->point);
+			iter = iter->next;
+
+		} while(iter != other.head);
+
+		return (*this);
+
+	}
+
+	~geom_polygon2d()
 	{
 		if(head != nullptr)
 		{
@@ -76,7 +111,7 @@ public:
 			delete head;
 		}
 	}
-*/
+
 
 	void insert_back(geom_p2d const& p)
 	{
