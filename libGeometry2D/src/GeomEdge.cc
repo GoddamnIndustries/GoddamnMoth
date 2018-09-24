@@ -1,53 +1,75 @@
 #include "GeomEdge.hh"
-//#include "../../libLinearAlgebra/src/Test.h"
+#include "../../libLinearAlgebra/src/Test.h"
 
-template <typename T>
-int sgn(T val)
+#include <sstream>
+
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
+std::ostream& operator<<(std::ostream& stream, const geom_p2d& p)
 {
-    return (T(0) < val) - (val < T(0));
+    return stream << "(" << p.x << "," << p.y << ")";
+}
+std::istream& operator>>(std::istream& stream, geom_p2d& p)
+{
+    return stream;
+}
+
+std::string geom_p2d::str(const geom_p2d& p)
+{
+    std::stringstream stream;
+    stream << p;
+    return stream.str();
 }
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-/// @todo Move to header one day.
-struct geom_e2d_list : public geom_p2d
+std::ostream& operator<<(std::ostream& stream, const geom_e2d& e)
 {
-    geom_e2d_list* next = this;
-    geom_e2d_list* next_in = nullptr;
-    geom_e2d_list* next_out = nullptr;
-    geom_e2d edge() const { return { *this, *next }; }
+    stream << "(" << e.s << ", " << e.t << ")";
+    return stream;
+}
 
-    void insert(const geom_p2d& p)
-    {
-        auto* n = new geom_e2d_list{};
-        (geom_p2d&)*n = p;
-        n->next = next;
-        next = n;
-    }
+std::istream& operator<<(std::istream& stream, geom_e2d& e)
+{
+    abort();
+}
 
-
-    static int orientation(const geom_e2d_list* E);
-
-    static bool contains(const geom_e2d_list* E, const geom_p2d& p);
-
-    static void clip(geom_e2d_list* E1, geom_e2d_list* E2);
-};  // struct geom_e2d_list
+std::string geom_e2d::str(const geom_e2d& e)
+{
+    std::stringstream stream;
+    stream << e;
+    return stream.str();
+}
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-int
-geom_e2d_list::orientation(const geom_e2d_list* E)
+std::ostream& operator<<(std::ostream& stream, const geom_e2d_list* poly)
 {
-    geom_real_t E_square = 0.0;
-    const geom_e2d_list* E_i = E;
-    do
-    {
-        const geom_e2d_list* E_ip = E->next;
-        E_square += geom_p2d::det(*E_i, *E_ip);
-    } while ((E_i = E_i->next) != E);
-    return sgn(E_square);
+    stream << "(";
+    const geom_e2d_list* head = poly;
+    do {
+        stream << poly->point;
+        if (poly->next != head) {
+            stream << ", ";
+        }
+    } while (geom_e2d_list::move_next(poly, head));
+    stream << ")";
+    return stream;
+}
+
+std::istream& operator>>(std::istream& stream, geom_e2d_list* poly)
+{
+    abort();
+}
+
+std::string geom_e2d_list::str(const geom_e2d_list* poly)
+{
+    std::stringstream stream;
+    stream << poly;
+    return stream.str();
 }
 
 // ------------------------------------------------------------------------------------ //
@@ -113,6 +135,7 @@ geom_collide(const geom_e2d& e1, const geom_e2d& e2, geom_c2d_list* collision)
     }
 }
 
+#if 0
 void
 geom_collide(const geom_e2d_list* E1, const geom_e2d& e2, geom_c2d_list* collision)
 {
@@ -175,5 +198,5 @@ geom_e2d_list::clip(geom_e2d_list* E1, geom_e2d_list* E2)
         } while ((E2_j = E2_j->next) != E2);
     } while ((E1_i = E1_i->next) != E1);
 }
-
+#endif
 

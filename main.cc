@@ -10,7 +10,31 @@ int main()
 	geom_e2d e2{ {2.5, -.5}, {2.5, 0.5} };
 	geom_intersects(e1, e2);*/
 
+	auto* poly = new geom_e2d_list{{0.0, 0.0}};
+    poly->insert_next({0.0, 1.0});
+    poly->insert_next({1.0, 1.0});
+    poly->insert_next({1.0, 0.0});
+    auto poly_p = geom_e2d_list::len(poly);
+    auto poly_s = geom_e2d_list::sqr(poly);
+    auto poly_c = geom_e2d_list::str(poly);
+    assert(poly_c == "((0, 0), (1, 0), (1, 1), (0, 1))");
+    assert(poly_p == 4.0 && poly_s == -1.0);
 
+    auto poly_cpy = geom_e2d_list::cpy(poly);
+    poly_p = geom_e2d_list::len(poly_cpy);
+    poly_s = geom_e2d_list::sqr(poly_cpy);
+    poly_c = geom_e2d_list::str(poly_cpy);
+    assert(poly_c == "((0, 0), (1, 0), (1, 1), (0, 1))");
+    assert(poly_p == 4.0 && poly_s == -1.0);
+    delete poly_cpy;
+
+    auto poly_rev = geom_e2d_list::rev(poly);
+    poly_p = geom_e2d_list::len(poly_rev);
+    poly_s = geom_e2d_list::sqr(poly_rev);
+    poly_c = geom_e2d_list::str(poly_rev);
+    assert(poly_c == "((0, 0), (0, 1), (1, 1), (1, 0))");
+    assert(poly_p == 4.0 && poly_s == +1.0);
+    delete poly_rev;
 
 	geom_e2d e1{{0.0, 0.0}, {1.0, 1.0}};
 	geom_e2d e2{{0.5, 0.5}, {0.7, 0.7}};
@@ -27,9 +51,6 @@ int main()
 
 	geom_e2d e9{{4, 4}, {4, 3}};
 	geom_e2d e10{{3,1}, {8, 1}};
-
-
-
 
 	geom_e2d int_seg_1, int_seg_2, int_seg_3, int_seg_4, int_seg_5, int_seg_6, int_seg_7, int_seg_8;
 	auto const m_a_1 = geom_collide(e1, e2, int_seg_1); // GEOM_C2D_TOUCH

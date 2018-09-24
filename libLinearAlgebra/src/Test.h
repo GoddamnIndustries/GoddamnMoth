@@ -130,7 +130,7 @@ namespace goddamn_testing
 		unit_test_results m_test_results;
 
 	public:
-		testing_api unit_test(unit_test_function const test_function)
+		testing_api unit_test(unit_test_function const test_function) noexcept
 		{
 			/// @todo Implement a cool testing framework, not just the automated test executing on each engine run.
 			//try
