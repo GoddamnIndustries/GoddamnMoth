@@ -2,6 +2,13 @@
 #include "../../libLinearAlgebra/src/Test.h"
 
 #include <sstream>
+#include <cstdarg>
+#if (defined (__APPLE__) && defined (__MACH__))
+#define __unix__ 1
+#endif
+#ifdef __unix__
+#include <unistd.h>
+#endif
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -31,7 +38,7 @@ std::ostream& operator<<(std::ostream& stream, const geom_e2d& e)
     return stream;
 }
 
-std::istream& operator<<(std::istream& stream, geom_e2d& e)
+std::istream& operator>>(std::istream& stream, geom_e2d& e)
 {
     abort();
 }
@@ -70,6 +77,51 @@ std::string geom_e2d_list::str(const geom_e2d_list* poly)
     std::stringstream stream;
     stream << poly;
     return stream.str();
+}
+
+void geom_e2d_list::plt(const geom_e2d_list* poly, ...)
+{
+#ifdef __unix__
+    std::stringstream plt_stream;
+    va_list poly_list{};
+    va_start(poly_list, poly);
+    const geom_e2d_list* head = poly;
+    do {
+        plt_stream << poly->point.x << " ";
+        plt_stream << poly->point.y << " ";
+        plt_stream << std::endl;
+    } while (geom_e2d_list::move_next(poly, head));
+    plt_stream << poly->point.x << " ";
+    plt_stream << poly->point.y << " ";
+    plt_stream << std::endl;
+    plt_stream << "e" << std::endl;
+    va_end(poly_list);
+    std::string plt_input = plt_stream.str();
+
+    int plt_pipe[2] = {};
+    pipe(plt_pipe);
+
+    pid_t plt_child = fork();
+    if (plt_child == 0) {
+        //close(STDOUT_FILENO);
+        //close(STDERR_FILENO);
+        close(plt_pipe[1]);
+        dup2(plt_pipe[0], STDIN_FILENO);
+        close(plt_pipe[0]);
+
+        const char* plt_exe = "/usr/local/bin/gnuplot";
+        const char* plt_args[] = {plt_exe, "-e", "set xrange[-3:3]; set yrange[-3:3]; plot '-' with lines; pause -1;", nullptr};
+        execvp(plt_exe, const_cast<char* const*>(plt_args));
+        exit(-1);
+    } else {
+        close(plt_pipe[0]);
+        write(plt_pipe[1], plt_input.data(), plt_input.size() * sizeof(plt_input[0]));
+        close(plt_pipe[1]);
+
+        int plt_status = 0;
+        waitpid(plt_child, &plt_status, 0);
+    }
+#endif
 }
 
 // ------------------------------------------------------------------------------------ //

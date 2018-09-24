@@ -10,6 +10,16 @@ int main()
 	geom_e2d e2{ {2.5, -.5}, {2.5, 0.5} };
 	geom_intersects(e1, e2);*/
 
+	auto star = geom_e2d_list_factory::new_star_ccw({0.0, 0.0}, 2.0, 1.0, 10);
+	auto star_a = geom_e2d_list::sqr(star);
+
+    auto star1 = geom_e2d_list_factory::cpy_rev(star);
+    auto star1_a = geom_e2d_list::sqr(star1);
+
+    auto stara = geom_e2d_list::arr(star);
+    auto starh = geom_e2d_list_factory::convex_hull(stara);
+    geom_e2d_list::plt(starh, star, nullptr);
+
 	auto* poly = new geom_e2d_list{{0.0, 0.0}};
     poly->insert_next({0.0, 1.0});
     poly->insert_next({1.0, 1.0});
@@ -20,7 +30,7 @@ int main()
     assert(poly_c == "((0, 0), (1, 0), (1, 1), (0, 1))");
     assert(poly_p == 4.0 && poly_s == -1.0);
 
-    auto poly_cpy = geom_e2d_list::cpy(poly);
+    auto poly_cpy = geom_e2d_list_factory::cpy(poly);
     poly_p = geom_e2d_list::len(poly_cpy);
     poly_s = geom_e2d_list::sqr(poly_cpy);
     poly_c = geom_e2d_list::str(poly_cpy);
@@ -28,7 +38,7 @@ int main()
     assert(poly_p == 4.0 && poly_s == -1.0);
     delete poly_cpy;
 
-    auto poly_rev = geom_e2d_list::rev(poly);
+    auto poly_rev = geom_e2d_list_factory::cpy_rev(poly);
     poly_p = geom_e2d_list::len(poly_rev);
     poly_s = geom_e2d_list::sqr(poly_rev);
     poly_c = geom_e2d_list::str(poly_rev);
