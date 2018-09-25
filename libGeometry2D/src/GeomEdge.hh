@@ -1,7 +1,7 @@
 #pragma once
 
 #include <algorithm>
-#include <ostream>
+#include <iostream>
 #include <istream>
 #include <vector>
 #include <memory>
@@ -19,12 +19,6 @@
 
 using geom_real_t = double;
 using geom_size_t = size_t;
-
-enum class geom_orient
-{
-    cw = -1,
-    ccw = 1,
-};  // enum class geom_orient
 
 template <typename T>
 int fsgn(T val)
@@ -44,9 +38,18 @@ struct geom_p2d final
 	geom_real_t y{};
 
 public:
+    geom_p2d operator+() const
+    {
+        return { x, y };
+    }
     geom_p2d operator+(const geom_p2d& p) const
     {
         return { x + p.x, y + p.y };
+    }
+
+    geom_p2d operator-() const
+    {
+        return { -x, -y };
     }
 	geom_p2d operator-(const geom_p2d& p) const
 	{
@@ -71,12 +74,6 @@ public:
     {
         return (x != p.x) || (y != p.y);
     }
-
-public:
-    friend std::ostream& operator<<(std::ostream& stream, const geom_p2d& p);
-    friend std::istream& operator>>(std::istream& stream, geom_p2d& p);
-
-    static std::string str(const geom_p2d& p);
 
 public:
     static geom_real_t dot(const geom_p2d& p1, const geom_p2d& p2)
@@ -113,7 +110,13 @@ public:
     {
 	    return {p1.y, -p1.x};
     }
+
+public:
+    static std::string str(const geom_p2d& p);
 };	// struct geom_p2d
+
+std::ostream& operator<<(std::ostream& stream, const geom_p2d& p);
+std::istream& operator>>(std::istream& stream, geom_p2d& p);
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -147,12 +150,6 @@ public:
     }
 
 public:
-    friend std::ostream& operator<<(std::ostream& stream, const geom_e2d& e);
-    friend std::istream& operator>>(std::istream& stream, geom_e2d& e);
-
-    static std::string str(const geom_e2d& e);
-
-public:
     static geom_real_t dot(const geom_e2d& e)
     {
         return geom_p2d::dot(e.t, e.s);
@@ -176,7 +173,57 @@ public:
     {
         return geom_p2d::det(e1.t - e1.s, e2.t - e2.s);
     }
+    static geom_real_t ang(const geom_e2d& e1, const geom_e2d& e2)
+    {
+        return geom_p2d::ang(e1.t - e1.s, e2.t - e2.s);
+    }
+
+public:
+    /// Calculates intersection of two edges.
+    static bool intersect(const geom_e2d& e1, geom_e2d e2, geom_e2d& e)
+    {
+        geom_p2d v1 = e1.t - e1.s;
+        geom_p2d v2 = e2.t - e2.s;
+        geom_real_t det = geom_p2d::det(v1, v2);
+        if(det != 0.0) {
+            // Edges are not collinear.
+            geom_p2d b = e2.s - e1.s;
+            geom_real_t alpha = geom_p2d::det(b, v2) / det;
+            geom_real_t gamma = geom_p2d::det(b, v1) / det;
+            if (alpha >= 0 && alpha <= 1 && gamma >= 0 && gamma <= 1) {
+                // Edges intersect on point.
+                e.s = e1.s + alpha * v1;
+                e.t = e.s;
+                return true;
+            }
+        } else {
+            // Edges are collinear.
+            if (geom_p2d::dot(v1, v2) < 0.0) {
+                std::swap(e2.s, e2.t);
+                v2 = -v2;
+            }
+
+            geom_p2d q1 = e2.s - e1.t;
+            geom_p2d q2 = e2.t - e1.s;
+            if (geom_p2d::det(q1, q2) == 0.0) {
+                // Edges are on one line.
+                if (geom_p2d::len(v1) + geom_p2d::len(v2) != fabs(geom_p2d::len(q2) - geom_p2d::len(q1))) {
+                    // Edges intersect on line.
+                    e.s = geom_p2d::max(geom_p2d::min(e2.s, e2.t), geom_p2d::min(e1.s, e1.t));
+                    e.t = geom_p2d::min(geom_p2d::max(e2.s, e2.t), geom_p2d::max(e1.s, e1.t));
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+public:
+    static std::string str(const geom_e2d& e);
 };	// struct geom_e2d
+
+std::ostream& operator<<(std::ostream& stream, const geom_e2d& e);
+std::istream& operator>>(std::istream& stream, geom_e2d& e);
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -208,39 +255,9 @@ public:
     }
 
 public:
-    friend std::ostream& operator<< (std::ostream& stream, const geom_e2d_list* poly);
-    friend std::istream& operator>> (std::istream& stream, geom_e2d_list* poly);
-
-    static std::string str(const geom_e2d_list* poly);
-    static void plt(const geom_e2d_list* poly, ...);
-
-public:
     geom_e2d edge() const
     {
         return {point, next->point};
-    }
-
-public:
-    /// Returns perimeter of the polygon.
-    static geom_real_t len(const geom_e2d_list* poly)
-    {
-        geom_real_t length = 0.0;
-        const geom_e2d_list* head = poly;
-        do {
-            length += geom_e2d::len(poly->edge());
-        } while (move(poly, head));
-        return length;
-    }
-
-    /// Returns signed area of the polygon.
-    static geom_real_t area(const geom_e2d_list* poly)
-    {
-        geom_real_t area = 0.0;
-        const geom_e2d_list* head = poly;
-        do {
-            area += geom_e2d::det(poly->edge()) * 0.5;
-        } while (move(poly, head));
-        return area;
     }
 
 public:
@@ -277,7 +294,9 @@ public:
         if (poly == nullptr) {
             poly = new geom_e2d_list{p};
         } else {
-            poly->insert(p);
+            geom_e2d_list* node = new geom_e2d_list{p};
+            node->next = poly->next;
+            poly->next = node;
             std::swap(poly->point, poly->next->point);
         }
     }
@@ -286,7 +305,9 @@ public:
         if (poly == nullptr) {
             poly = new geom_e2d_list{p};
         } else {
-            poly->insert(p);
+            geom_e2d_list* node = new geom_e2d_list{p};
+            node->next = poly->next;
+            poly->next = node;
             move(poly);
         }
     }
@@ -301,54 +322,59 @@ public:
         }
     }
 
-private:
-    static bool contains(const geom_e2d_list* E, const geom_p2d& p);
-    static void clip(geom_e2d_list* E1, geom_e2d_list* E2);
+public:
+    static geom_real_t len(const geom_e2d_list* poly)
+    {
+        geom_real_t length = 0.0;
+        const geom_e2d_list* head = poly;
+        do {
+            length += geom_e2d::len(poly->edge());
+        } while (move(poly, head));
+        return length;
+    }
+
+    static geom_real_t area(const geom_e2d_list* poly)
+    {
+        geom_real_t area = 0.0;
+        const geom_e2d_list* head = poly;
+        do {
+            area += geom_e2d::det(poly->edge()) * 0.5;
+        } while (move(poly, head));
+        return area;
+    }
+
+public:
+    static bool contains(const geom_e2d_list* poly, const geom_p2d& p)
+    {
+        geom_size_t intersections = 0;
+        const geom_e2d_list* head = poly;
+        do {
+            geom_e2d e;
+            geom_e2d e1 = poly->edge();
+            if (e1.s == p || e1.t == p) {
+                /* Boundary points are explicitly treated as internal. */
+                return true;
+            }
+
+            geom_e2d e2 = {p, {std::max(p.x + 50000.0, std::max(e1.s.x, e1.t.x)), p.y + 1.0}};
+            if (geom_e2d::intersect(e1, e2, e)) {
+                if (e.s == e.t) {
+                    intersections += 1;
+                } else {
+                    intersections += 2;
+                }
+            }
+        } while (move(poly, head));
+        return intersections % 2 == 1;
+    }
+
+public:
+    static std::string str(const geom_e2d_list* poly);
+    static std::string plt(const geom_e2d_list* poly, ...);
 };  // struct geom_e2d_list
 
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
-
-enum geom_c2d_type
-{
-    GEOM_C2D_NONE,
-    GEOM_C2D_TOUCH,
-    GEOM_C2D_INTERSECT,
-};	// enum geom_c2d_type
-
-enum geom_c2d_dirc_type
-{
-    GEOM_C2D_DIRECTION_NONE,
-    GEOM_C2D_DIRECTION_IN,
-    GEOM_C2D_DIRECTION_OUT,
-};  // enum geom_c2d_dirc_type
-
-struct geom_c2d_list
-{
-    geom_c2d_type type{};
-    geom_c2d_dirc_type direction{};
-    geom_e2d e{};
-    struct geom_e2d_list* c1 = nullptr;
-    struct geom_e2d_list* c2 = nullptr;
-    geom_c2d_list* next = nullptr;
-    ~geom_c2d_list()
-    {
-        delete next;
-    }
-};  // struct geom_c2d_list
-
-inline
-geom_c2d_type
-geom_collide(const geom_e2d &e1, const geom_e2d &e2, geom_e2d& e_int)
-{
-    extern void
-    geom_collide(geom_e2d, geom_e2d, geom_c2d_list*);
-
-    geom_c2d_list collision{};
-    geom_collide(e1, e2, &collision);
-    e_int = collision.e;
-    return collision.type;
-}
+std::ostream& operator<< (std::ostream& stream, const geom_e2d_list* poly);
+std::istream& operator>> (std::istream& stream, geom_e2d_list*& poly);
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -490,7 +516,9 @@ public:
 				do {
 					geom_e2d e0{};
 					geom_e2d e2 = poly2->edge();
-					if (geom_collide(e1, e2, e0)) {
+					if (geom_e2d::intersect(e1, e2, e0)) {
+					    auto a = geom_e2d::ang(e1, e2);
+					    std::cerr << a << std::endl;
 						geom_e2d_list::push(un, e0.s);
 						std::swap(poly1, poly2);
 						std::swap(head1, head2);
@@ -504,47 +532,102 @@ public:
 
     static geom_e2d_list* boolean_union(const geom_e2d_list* poly1, const geom_e2d_list* poly2)
     {
+        std::unique_ptr<geom_e2d_list> poly1_ptr{};
         geom_real_t area1 = geom_e2d_list::area(poly1);
-        if (area1 < 0.0) {
-            poly1 = geom_e2d_list_factory::copy_rev(poly1);
-        }
-
         geom_real_t area2 = geom_e2d_list::area(poly2);
-        if (area2 < 0.0) {
-            poly2 = geom_e2d_list_factory::copy_rev(poly2);
+        if (area1 * area2 < 0.0) {
+            poly1_ptr.reset(geom_e2d_list_factory::copy_rev(poly1));
+            poly1 = poly1_ptr.get();
         }
 
-        return boolean_generic(poly1, poly2);
-    }
-
-    static geom_e2d_list* boolean_minus(const geom_e2d_list* poly1, const geom_e2d_list* poly2)
-    {
-        geom_real_t area1 = geom_e2d_list::area(poly1);
-        if (area1 < 0.0) {
-            poly1 = geom_e2d_list_factory::copy_rev(poly1);
-        }
-
-        geom_real_t area2 = geom_e2d_list::area(poly2);
-        if (area2 > 0.0) {
-            poly2 = geom_e2d_list_factory::copy_rev(poly2);
-        }
-
-        return boolean_generic(poly1, poly2);
+        const geom_e2d_list* head1 = poly1;
+        do {
+            if (!geom_e2d_list::contains(poly2, poly1->point)) {
+                return boolean_generic(poly1, poly2);
+            }
+        } while (geom_e2d_list::move(poly1, head1));
+        abort();
     }
 
     static geom_e2d_list* boolean_inter(const geom_e2d_list* poly1, const geom_e2d_list* poly2)
     {
+        std::unique_ptr<geom_e2d_list> poly1_ptr{};
         geom_real_t area1 = geom_e2d_list::area(poly1);
-        if (area1 > 0.0) {
-            poly1 = geom_e2d_list_factory::copy_rev(poly1);
-        }
-
         geom_real_t area2 = geom_e2d_list::area(poly2);
-        if (area2 < 0.0) {
-            poly2 = geom_e2d_list_factory::copy_rev(poly2);
+        if (area1 * area2 < 0.0) {
+            poly1_ptr.reset(geom_e2d_list_factory::copy_rev(poly1));
+            poly1 = poly1_ptr.get();
         }
 
-        return boolean_generic(poly1, poly2);
+        const geom_e2d_list* head1 = poly1;
+        do {
+            if (geom_e2d_list::contains(poly2, poly1->point)) {
+                return boolean_generic(poly1, poly2);
+            }
+        } while (geom_e2d_list::move(poly1, head1));
+        abort();
+    }
+
+    static geom_e2d_list* boolean_minus(const geom_e2d_list* poly1, const geom_e2d_list* poly2)
+    {
+        std::unique_ptr<geom_e2d_list> poly1_ptr{};
+        geom_real_t area1 = geom_e2d_list::area(poly1);
+        geom_real_t area2 = geom_e2d_list::area(poly2);
+        if (area1 * area2 > 0.0) {
+            poly1_ptr.reset(geom_e2d_list_factory::copy_rev(poly1));
+            poly1 = poly1_ptr.get();
+        }
+
+        const geom_e2d_list* head1 = poly1;
+        do {
+            if (!geom_e2d_list::contains(poly2, poly1->point)) {
+                return boolean_generic(poly1, poly2);
+            }
+        } while (geom_e2d_list::move(poly1, head1));
+        abort();
     }
 };  // struct geom_e2d_list_factor
 
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
+enum geom_c2d_type
+{
+    GEOM_C2D_NONE,
+    GEOM_C2D_TOUCH,
+    GEOM_C2D_INTERSECT,
+};	// enum geom_c2d_type
+
+enum geom_c2d_dirc_type
+{
+    GEOM_C2D_DIRECTION_NONE,
+    GEOM_C2D_DIRECTION_IN,
+    GEOM_C2D_DIRECTION_OUT,
+};  // enum geom_c2d_dirc_type
+
+struct geom_c2d_list
+{
+    geom_c2d_type type{};
+    geom_c2d_dirc_type direction{};
+    geom_e2d e{};
+    struct geom_e2d_list* c1 = nullptr;
+    struct geom_e2d_list* c2 = nullptr;
+    geom_c2d_list* next = nullptr;
+    ~geom_c2d_list()
+    {
+        delete next;
+    }
+};  // struct geom_c2d_list
+
+inline
+geom_c2d_type
+geom_collide(const geom_e2d &e1, const geom_e2d &e2, geom_e2d& e_int)
+{
+    extern void
+    geom_collide(geom_e2d, geom_e2d, geom_c2d_list*);
+
+    geom_c2d_list collision{};
+    geom_collide(e1, e2, &collision);
+    e_int = collision.e;
+    return collision.type;
+}

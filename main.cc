@@ -40,12 +40,14 @@ int main()
 	auto r2 = geom_e2d_list_factory::new_rect_ccw({1.0,1.0}, {3.0,3.0});
     geom_e2d_list::move(r1);
     geom_e2d_list::move(r2);
-	auto rr = geom_e2d_list_factory::boolean_inter(r1, r2);
-    geom_e2d_list::plt(rr, nullptr);
+	auto rr = geom_e2d_list_factory::boolean_union(r1, r2);
+    //geom_e2d_list::plt(rr, nullptr);
 
     auto star = geom_e2d_list_factory::new_star_ccw({0.0, 0.0}, 2.0, 1.0, 10);
+    auto bbb = geom_e2d_list::contains(star, {0.0, 0.0});
+
     auto star1 = geom_e2d_list_factory::copy_rev(star);
-    rr = geom_e2d_list_factory::boolean_inter(rr, star);
+    rr = geom_e2d_list_factory::boolean_minus(star, rr);
     geom_e2d_list::plt(rr, nullptr);
 
     auto star_a = geom_e2d_list::area(star);

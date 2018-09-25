@@ -84,7 +84,7 @@ std::string geom_e2d_list::str(const geom_e2d_list* poly)
     return stream.str();
 }
 
-void geom_e2d_list::plt(const geom_e2d_list* poly, ...)
+std::string geom_e2d_list::plt(const geom_e2d_list* poly, ...)
 {
     std::stringstream plt_stream;
     va_list poly_list{};
@@ -152,6 +152,7 @@ void geom_e2d_list::plt(const geom_e2d_list* poly, ...)
         CloseHandle(plt_pipe_input_write);
     }
 #endif
+    return "";
 }
 
 // ------------------------------------------------------------------------------------ //
@@ -194,7 +195,7 @@ geom_collide(geom_e2d e1, geom_e2d e2, geom_c2d_list* collision)
     {
         if (geom_p2d::dot(v1, v2) < 0) {
             std::swap(e2.s, e2.t);
-            v2 = -1 * v2;
+            v2 = -v2;
         }
 
         // Edges are collinear.
