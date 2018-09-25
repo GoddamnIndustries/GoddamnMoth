@@ -9,6 +9,9 @@
 #include <cassert>
 #include <cmath>
 
+#undef min
+#undef max
+
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
@@ -112,8 +115,6 @@ public:
     }
 };	// struct geom_p2d
 
-struct geom_p2d_array : std::vector<geom_p2d> {};
-
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
@@ -201,7 +202,7 @@ public:
     {
         if (next != this) {
             do {
-                remove_nxt();
+                remove();
             } while (next != this);
         }
     }
@@ -220,17 +221,6 @@ public:
     }
 
 public:
-    static geom_p2d_array arr(const geom_e2d_list* poly)
-    {
-        geom_p2d_array array{};
-        const geom_e2d_list* head = poly;
-        do {
-            array.push_back(poly->point);
-        } while (move_next(poly, head));
-        return array;
-    }
-
-public:
     /// Returns perimeter of the polygon.
     static geom_real_t len(const geom_e2d_list* poly)
     {
@@ -238,71 +228,77 @@ public:
         const geom_e2d_list* head = poly;
         do {
             length += geom_e2d::len(poly->edge());
-        } while (move_next(poly, head));
+        } while (move(poly, head));
         return length;
     }
 
     /// Returns signed area of the polygon.
-    static geom_real_t sqr(const geom_e2d_list* poly)
+    static geom_real_t area(const geom_e2d_list* poly)
     {
-        geom_real_t square = 0.0;
+        geom_real_t area = 0.0;
         const geom_e2d_list* head = poly;
         do {
-            square += geom_e2d::det(poly->edge()) * 0.5;
-        } while (move_next(poly, head));
-        return square;
+            area += geom_e2d::det(poly->edge()) * 0.5;
+        } while (move(poly, head));
+        return area;
     }
 
 public:
-    static bool move_next(geom_e2d_list*& list, const geom_e2d_list* head = nullptr)
+    static bool move(geom_e2d_list*& list, const geom_e2d_list* head = nullptr)
     {
         list = list->next;
         return list != head;
     }
-    static bool move_prev(geom_e2d_list*& list, const geom_e2d_list* head = nullptr)
+    static bool move(const geom_e2d_list*& list, const geom_e2d_list* head = nullptr)
     {
-        for (const geom_e2d_list* last = list; list->next != last; move_next(list));
-        return list != head;
-    }
-
-    static bool move_next(const geom_e2d_list*& list, const geom_e2d_list* head = nullptr)
-    {
-        return move_next(const_cast<geom_e2d_list*&>(list), head);
-    }
-    static bool move_prev(const geom_e2d_list*& list, const geom_e2d_list* head = nullptr)
-    {
-        return move_prev(const_cast<geom_e2d_list*&>(list), head);
+        return move(const_cast<geom_e2d_list*&>(list), head);
     }
 
 public:
-    void insert_next(const geom_p2d& p)
+    void insert(const geom_p2d& p)
     {
         geom_e2d_list* list = this;
-        auto node = new geom_e2d_list{p};
+        geom_e2d_list* node = new geom_e2d_list{p};
         node->next = list->next;
         list->next = node;
     }
-    void insert_prev(const geom_p2d& p)
+    void remove()
     {
         geom_e2d_list* list = this;
-        move_prev(list);
-        list->insert_next(p);
-    }
-
-    void remove_nxt()
-    {
-        geom_e2d_list* list = this;
-        auto node = list->next;
+        geom_e2d_list* node = list->next;
         list->next = node->next;
         node->next = node;
         delete node;
     }
-    void remove_prv()
+
+public:
+    static void push(geom_e2d_list*& poly, const geom_p2d& p)
     {
-        geom_e2d_list* list = this;
-        move_prev(list);
-        move_prev(list);
-        list->remove_nxt();
+        if (poly == nullptr) {
+            poly = new geom_e2d_list{p};
+        } else {
+            poly->insert(p);
+            std::swap(poly->point, poly->next->point);
+        }
+    }
+    static void pull(geom_e2d_list*& poly, const geom_p2d& p)
+    {
+        if (poly == nullptr) {
+            poly = new geom_e2d_list{p};
+        } else {
+            poly->insert(p);
+            move(poly);
+        }
+    }
+    static void pop(geom_e2d_list*& poly)
+    {
+        if (poly->next == poly) {
+            delete poly;
+            poly = nullptr;
+        } else {
+            std::swap(poly->point, poly->next->point);
+            poly->remove();
+        }
     }
 
 private:
@@ -310,141 +306,14 @@ private:
     static void clip(geom_e2d_list* E1, geom_e2d_list* E2);
 };  // struct geom_e2d_list
 
-///
-/// 2D polygon factory.
-///
-struct geom_e2d_list_factory final
-{
-public:
-    /// Returns copy of the polygon.
-    static geom_e2d_list* cpy(const geom_e2d_list* poly)
-    {
-        assert(poly != nullptr);
-        geom_e2d_list* copy = nullptr;
-        const geom_e2d_list* head = poly;
-        do {
-            if (copy == nullptr) {
-                copy = new geom_e2d_list{poly->point};
-            } else {
-                copy->insert_next(poly->point);
-            }
-        } while (geom_e2d_list::move_next(copy), geom_e2d_list::move_next(poly, head));
-        geom_e2d_list::move_next(copy);
-        return copy;
-    }
-
-    /// Returns reverse copy of the polygon.
-    static geom_e2d_list* cpy_rev(const geom_e2d_list *poly)
-    {
-        assert(poly != nullptr);
-        geom_e2d_list* copy = nullptr;
-        const geom_e2d_list* head = poly;
-        do {
-            if (copy == nullptr) {
-                copy = new geom_e2d_list{poly->point};
-            } else {
-                copy->insert_next(poly->point);
-            }
-        } while (geom_e2d_list::move_next(poly, head));
-        return copy;
-    }
-
-public:
-    /// Returns rectangle with given south-west and north-east points.
-    static geom_e2d_list* new_rect_ccw(const geom_p2d& p_sw, const geom_p2d& p_ne)
-    {
-        assert(p_sw.x < p_ne.x);
-        assert(p_sw.y < p_ne.y);
-        geom_p2d p_se{p_sw.x, p_ne.y};
-        geom_p2d p_nw{p_ne.x, p_sw.y};
-        geom_e2d_list* poly = new geom_e2d_list(p_sw);
-        poly->insert_next(p_nw);
-        poly->insert_next(p_ne);
-        poly->insert_next(p_se);
-        return poly;
-    }
-
-public:
-    /// Returns circle of the given radius with CCW orientation.
-    static geom_e2d_list* new_circle_ccw(const geom_p2d& c, geom_real_t r, geom_size_t n = 10)
-    {
-        assert(r > 0.0);
-        assert(n > 1);
-        geom_e2d_list* poly = nullptr;
-        for (geom_size_t i = 0; i < n; ++i) {
-            geom_real_t phi = 2.0 * GEOM_PI * i / n;
-            geom_p2d p = c + geom_p2d{r * cos(phi), r * sin(phi)};
-            if (poly == nullptr) {
-                poly = new geom_e2d_list(p);
-            } else {
-                poly->insert_next(p);
-            }
-        }
-        return poly;
-    }
-
-    /// Returns start of given outer and inner radius with CCW orientation.
-    static geom_e2d_list* new_star_ccw(const geom_p2d &c, geom_real_t r1, geom_real_t r2, geom_size_t n = 10)
-    {
-        assert(r1 > 0.0 && r2 > 0.0);
-        assert(n > 1);
-        geom_e2d_list* poly = nullptr;
-        for (geom_size_t i = 0; i < n; ++i) {
-            geom_real_t phi1 = 2.0 * GEOM_PI * i / n;
-            geom_p2d p1 = c + geom_p2d{r1 * cos(phi1), r1 * sin(phi1)};
-            if (poly == nullptr) {
-                poly = new geom_e2d_list(p1);
-            } else {
-                poly->insert_next(p1);
-            }
-
-            geom_real_t phi2 = 2.0 * GEOM_PI * (i + 0.5) / n;
-            geom_p2d p2 = c + geom_p2d{r2 * cos(phi2), r2 * sin(phi2)};
-            poly->insert_next(p2);
-        }
-        return poly;
-    }
-
-public:
-    /// Returns convex hull of the given set of points.
-    static geom_e2d_list* convex_hull(geom_p2d_array& ps)
-    {
-        /* Find the left-most point and move it to index 0. */
-        std::iter_swap(ps.begin(), std::min_element(ps.begin(), ps.end(),
-            [](const geom_p2d& p1, const geom_p2d& p2) {
-                return p1.x < p2.x;
-            }));
-        std::sort(ps.begin() + 1, ps.end(),
-            [p = ps[0]](const geom_p2d& p1, const geom_p2d& p2) {
-                  return geom_p2d::det(p1 - p, p2 - p) < 0;
-            });
-
-        geom_e2d_list* poly = new geom_e2d_list(ps[0]);
-        poly->insert_next(ps[1]);
-        poly->insert_next(ps[2]);
-        geom_e2d_list::move_next(poly);
-        for (geom_size_t i = 3; i < ps.size(); ++i) {
-            geom_p2d p1, p2, p3;
-            while (p3 = ps[i], p1 = poly->point, p2 = poly->next->point,
-                   geom_p2d::det(p2 - p1, p3 - p1) <= 0.0) {
-                geom_e2d_list::move_next(poly);
-                poly->remove_prv();
-            }
-            poly->insert_prev(ps[i]);
-            geom_e2d_list::move_prev(poly);
-        }
-        return poly;
-    }
-};  // struct geom_e2d_list_factor
-
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
 enum geom_c2d_type
 {
-	GEOM_C2D_NONE,
+    GEOM_C2D_NONE,
     GEOM_C2D_TOUCH,
-	GEOM_C2D_INTERSECT,
+    GEOM_C2D_INTERSECT,
 };	// enum geom_c2d_type
 
 enum geom_c2d_dirc_type
@@ -473,10 +342,209 @@ geom_c2d_type
 geom_collide(const geom_e2d &e1, const geom_e2d &e2, geom_e2d& e_int)
 {
     extern void
-    geom_collide(const geom_e2d&, const geom_e2d&, geom_c2d_list*);
+    geom_collide(geom_e2d, geom_e2d, geom_c2d_list*);
 
     geom_c2d_list collision{};
     geom_collide(e1, e2, &collision);
     e_int = collision.e;
     return collision.type;
 }
+
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
+///
+/// 2D polygon factory.
+///
+struct geom_e2d_list_factory final
+{
+public:
+    /// Returns copy of the polygon.
+    static geom_e2d_list* copy(const geom_e2d_list* poly)
+    {
+        assert(poly != nullptr);
+        geom_e2d_list* copy = nullptr;
+        const geom_e2d_list* head = poly;
+        do {
+            geom_e2d_list::pull(copy, poly->point);
+        } while (geom_e2d_list::move(poly, head));
+        geom_e2d_list::move(copy);
+        return copy;
+    }
+
+    /// Returns reverse copy of the polygon.
+    static geom_e2d_list* copy_rev(const geom_e2d_list* poly)
+    {
+        assert(poly != nullptr);
+        geom_e2d_list* copy = nullptr;
+        const geom_e2d_list* head = poly;
+        do {
+            geom_e2d_list::push(copy, poly->point);
+        } while (geom_e2d_list::move(poly, head));
+        return copy;
+    }
+
+public:
+    /// Returns rectangle with given south-west and north-east points.
+    static geom_e2d_list* new_rect_ccw(const geom_p2d& p_sw, const geom_p2d& p_ne)
+    {
+        assert(p_sw.x < p_ne.x);
+        assert(p_sw.y < p_ne.y);
+        geom_p2d p_se{p_sw.x, p_ne.y};
+        geom_p2d p_nw{p_ne.x, p_sw.y};
+        geom_e2d_list* poly = new geom_e2d_list(p_sw);
+        poly->insert(p_nw);
+        poly->insert(p_ne);
+        poly->insert(p_se);
+        return poly;
+    }
+
+public:
+    /// Returns circle of the given radius with CCW orientation.
+    static geom_e2d_list* new_circle_ccw(const geom_p2d& c, geom_real_t r, geom_size_t n = 10)
+    {
+        assert(r > 0.0);
+        assert(n > 1);
+        geom_e2d_list* poly = nullptr;
+        for (geom_size_t i = 0; i < n; ++i) {
+            geom_real_t phi = 2.0 * GEOM_PI * i / n;
+            geom_p2d p = c + geom_p2d{r * cos(phi), r * sin(phi)};
+            if (poly == nullptr) {
+                poly = new geom_e2d_list(p);
+            } else {
+                poly->insert(p);
+            }
+        }
+        return poly;
+    }
+
+    /// Returns start of given outer and inner radius with CCW orientation.
+    static geom_e2d_list* new_star_ccw(const geom_p2d &c, geom_real_t r1, geom_real_t r2, geom_size_t n = 10)
+    {
+        assert(r1 > 0.0 && r2 > 0.0);
+        assert(n > 1);
+        geom_e2d_list* poly = nullptr;
+        for (geom_size_t i = 0; i < n; ++i) {
+            geom_real_t phi1 = 2.0 * GEOM_PI * i / n;
+            geom_p2d p1 = c + geom_p2d{r1 * cos(phi1), r1 * sin(phi1)};
+            if (poly == nullptr) {
+                poly = new geom_e2d_list(p1);
+            } else {
+                poly->insert(p1);
+            }
+
+            geom_real_t phi2 = 2.0 * GEOM_PI * (i + 0.5) / n;
+            geom_p2d p2 = c + geom_p2d{r2 * cos(phi2), r2 * sin(phi2)};
+            poly->insert(p2);
+        }
+        return poly;
+    }
+
+public:
+    /// Returns convex hull of the given set of points.
+    static geom_e2d_list* convex_hull(const geom_e2d_list* poly)
+    {
+        std::vector<geom_p2d> p{};
+        const geom_e2d_list* head = poly;
+        do {
+            p.push_back(poly->point);
+        } while (geom_e2d_list::move(poly, head));
+
+        /* Find the left-most point and move it to index 0. */
+        std::iter_swap(p.begin(), std::min_element(p.begin(), p.end(),
+            [&](const geom_p2d& p1, const geom_p2d& p2) {
+                return p1.x < p2.x;
+            }));
+        /* Sort points by the polar angles with p[0]. */
+        std::sort(p.begin() + 1, p.end(),
+            [&](const geom_p2d& p1, const geom_p2d& p2) {
+                  return geom_p2d::det(p1 - p[0], p2 - p[0]) < 0;
+            });
+
+        geom_e2d_list* hull = nullptr;
+        geom_e2d_list::push(hull, p[0]);
+        geom_e2d_list::push(hull, p[1]);
+        geom_e2d_list::push(hull, p[2]);
+        for (geom_size_t i = 3; i < p.size(); ++i) {
+            geom_p2d p_i = p[i];
+            while (geom_e2d::det(hull->edge(), p_i) >= 0.0) {
+                geom_e2d_list::pop(hull);
+            }
+            geom_e2d_list::push(hull, p_i);
+        }
+        return hull;
+    }
+
+public:
+    /// Returns result of the generic order-dependant boolean operation.
+    static geom_e2d_list* boolean_generic(const geom_e2d_list* poly1, const geom_e2d_list* poly2)
+    {
+        geom_e2d_list* un = nullptr;
+		const geom_e2d_list* start = poly1;
+		const geom_e2d_list* head1 = poly1;
+		const geom_e2d_list* head2 = poly2;
+		do {
+			do {
+				geom_e2d e1 = poly1->edge();
+				geom_e2d_list::push(un, poly1->point);
+				do {
+					geom_e2d e0{};
+					geom_e2d e2 = poly2->edge();
+					if (geom_collide(e1, e2, e0)) {
+						geom_e2d_list::push(un, e0.s);
+						std::swap(poly1, poly2);
+						std::swap(head1, head2);
+						break;
+					}
+				} while (geom_e2d_list::move(poly2, head2));
+			} while (geom_e2d_list::move(poly1, head1));
+		} while (start != head1);
+        return un;
+    }
+
+    static geom_e2d_list* boolean_union(const geom_e2d_list* poly1, const geom_e2d_list* poly2)
+    {
+        geom_real_t area1 = geom_e2d_list::area(poly1);
+        if (area1 < 0.0) {
+            poly1 = geom_e2d_list_factory::copy_rev(poly1);
+        }
+
+        geom_real_t area2 = geom_e2d_list::area(poly2);
+        if (area2 < 0.0) {
+            poly2 = geom_e2d_list_factory::copy_rev(poly2);
+        }
+
+        return boolean_generic(poly1, poly2);
+    }
+
+    static geom_e2d_list* boolean_minus(const geom_e2d_list* poly1, const geom_e2d_list* poly2)
+    {
+        geom_real_t area1 = geom_e2d_list::area(poly1);
+        if (area1 < 0.0) {
+            poly1 = geom_e2d_list_factory::copy_rev(poly1);
+        }
+
+        geom_real_t area2 = geom_e2d_list::area(poly2);
+        if (area2 > 0.0) {
+            poly2 = geom_e2d_list_factory::copy_rev(poly2);
+        }
+
+        return boolean_generic(poly1, poly2);
+    }
+
+    static geom_e2d_list* boolean_inter(const geom_e2d_list* poly1, const geom_e2d_list* poly2)
+    {
+        geom_real_t area1 = geom_e2d_list::area(poly1);
+        if (area1 > 0.0) {
+            poly1 = geom_e2d_list_factory::copy_rev(poly1);
+        }
+
+        geom_real_t area2 = geom_e2d_list::area(poly2);
+        if (area2 < 0.0) {
+            poly2 = geom_e2d_list_factory::copy_rev(poly2);
+        }
+
+        return boolean_generic(poly1, poly2);
+    }
+};  // struct geom_e2d_list_factor
+

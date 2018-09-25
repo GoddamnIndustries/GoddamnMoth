@@ -10,41 +10,51 @@ int main()
 	geom_e2d e2{ {2.5, -.5}, {2.5, 0.5} };
 	geom_intersects(e1, e2);*/
 
-	auto star = geom_e2d_list_factory::new_star_ccw({0.0, 0.0}, 2.0, 1.0, 10);
-	auto star_a = geom_e2d_list::sqr(star);
-
-    auto star1 = geom_e2d_list_factory::cpy_rev(star);
-    auto star1_a = geom_e2d_list::sqr(star1);
-
-    auto stara = geom_e2d_list::arr(star);
-    auto starh = geom_e2d_list_factory::convex_hull(stara);
-    geom_e2d_list::plt(starh, star, nullptr);
-
-	auto* poly = new geom_e2d_list{{0.0, 0.0}};
-    poly->insert_next({0.0, 1.0});
-    poly->insert_next({1.0, 1.0});
-    poly->insert_next({1.0, 0.0});
+    auto* poly = new geom_e2d_list{{0.0, 0.0}};
+    poly->insert({0.0, 1.0});
+    poly->insert({1.0, 1.0});
+    poly->insert({1.0, 0.0});
     auto poly_p = geom_e2d_list::len(poly);
-    auto poly_s = geom_e2d_list::sqr(poly);
+    auto poly_s = geom_e2d_list::area(poly);
     auto poly_c = geom_e2d_list::str(poly);
     assert(poly_c == "((0, 0), (1, 0), (1, 1), (0, 1))");
     assert(poly_p == 4.0 && poly_s == -1.0);
 
-    auto poly_cpy = geom_e2d_list_factory::cpy(poly);
+    auto poly_cpy = geom_e2d_list_factory::copy(poly);
     poly_p = geom_e2d_list::len(poly_cpy);
-    poly_s = geom_e2d_list::sqr(poly_cpy);
+    poly_s = geom_e2d_list::area(poly_cpy);
     poly_c = geom_e2d_list::str(poly_cpy);
     assert(poly_c == "((0, 0), (1, 0), (1, 1), (0, 1))");
     assert(poly_p == 4.0 && poly_s == -1.0);
     delete poly_cpy;
 
-    auto poly_rev = geom_e2d_list_factory::cpy_rev(poly);
+    auto poly_rev = geom_e2d_list_factory::copy_rev(poly);
     poly_p = geom_e2d_list::len(poly_rev);
-    poly_s = geom_e2d_list::sqr(poly_rev);
+    poly_s = geom_e2d_list::area(poly_rev);
     poly_c = geom_e2d_list::str(poly_rev);
-    assert(poly_c == "((0, 0), (0, 1), (1, 1), (1, 0))");
+    assert(poly_c == "((0, 1), (1, 1), (1, 0), (0, 0))");
     assert(poly_p == 4.0 && poly_s == +1.0);
     delete poly_rev;
+
+	auto r1 = geom_e2d_list_factory::new_rect_ccw({0.0,0.0}, {2.0,2.0});
+	auto r2 = geom_e2d_list_factory::new_rect_ccw({1.0,1.0}, {3.0,3.0});
+    geom_e2d_list::move(r1);
+    geom_e2d_list::move(r2);
+	auto rr = geom_e2d_list_factory::boolean_inter(r1, r2);
+    geom_e2d_list::plt(rr, nullptr);
+
+    auto star = geom_e2d_list_factory::new_star_ccw({0.0, 0.0}, 2.0, 1.0, 10);
+    auto star1 = geom_e2d_list_factory::copy_rev(star);
+    rr = geom_e2d_list_factory::boolean_inter(rr, star);
+    geom_e2d_list::plt(rr, nullptr);
+
+    auto star_a = geom_e2d_list::area(star);
+
+
+    auto star1_a = geom_e2d_list::area(star1);
+
+    auto starh = geom_e2d_list_factory::convex_hull(star);
+    geom_e2d_list::plt(starh, star, nullptr);
 
 	geom_e2d e1{{0.0, 0.0}, {1.0, 1.0}};
 	geom_e2d e2{{0.5, 0.5}, {0.7, 0.7}};

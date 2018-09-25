@@ -8,14 +8,19 @@
 #endif
 #ifdef __unix__
 #include <unistd.h>
+#else
+#include <windows.h>
 #endif
+
+#undef min
+#undef max
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
 std::ostream& operator<<(std::ostream& stream, const geom_p2d& p)
 {
-    return stream << "(" << p.x << "," << p.y << ")";
+    return stream << "(" << p.x << ", " << p.y << ")";
 }
 std::istream& operator>>(std::istream& stream, geom_p2d& p)
 {
@@ -62,7 +67,7 @@ std::ostream& operator<<(std::ostream& stream, const geom_e2d_list* poly)
         if (poly->next != head) {
             stream << ", ";
         }
-    } while (geom_e2d_list::move_next(poly, head));
+    } while (geom_e2d_list::move(poly, head));
     stream << ")";
     return stream;
 }
@@ -81,30 +86,27 @@ std::string geom_e2d_list::str(const geom_e2d_list* poly)
 
 void geom_e2d_list::plt(const geom_e2d_list* poly, ...)
 {
-#ifdef __unix__
     std::stringstream plt_stream;
     va_list poly_list{};
     va_start(poly_list, poly);
     const geom_e2d_list* head = poly;
     do {
-        plt_stream << poly->point.x << " ";
-        plt_stream << poly->point.y << " ";
+        plt_stream << poly->point.x << " " << poly->point.y << " ";
         plt_stream << std::endl;
-    } while (geom_e2d_list::move_next(poly, head));
-    plt_stream << poly->point.x << " ";
-    plt_stream << poly->point.y << " ";
+    } while (geom_e2d_list::move(poly, head));
+    plt_stream << poly->point.x << " " << poly->point.y << " ";
     plt_stream << std::endl;
-    plt_stream << "e" << std::endl;
+    plt_stream << "e";
+    plt_stream << std::endl;
     va_end(poly_list);
     std::string plt_input = plt_stream.str();
 
+#ifdef __unix__
     int plt_pipe[2] = {};
     pipe(plt_pipe);
 
     pid_t plt_child = fork();
     if (plt_child == 0) {
-        //close(STDOUT_FILENO);
-        //close(STDERR_FILENO);
         close(plt_pipe[1]);
         dup2(plt_pipe[0], STDIN_FILENO);
         close(plt_pipe[0]);
@@ -121,6 +123,34 @@ void geom_e2d_list::plt(const geom_e2d_list* poly, ...)
         int plt_status = 0;
         waitpid(plt_child, &plt_status, 0);
     }
+#else
+    SECURITY_ATTRIBUTES plt_security_attrs{};
+    plt_security_attrs.nLength = sizeof(plt_security_attrs);
+    plt_security_attrs.bInheritHandle = TRUE;
+
+    HANDLE plt_pipe_input_read{};
+    HANDLE plt_pipe_input_write{};
+    CreatePipe(&plt_pipe_input_read, &plt_pipe_input_write, &plt_security_attrs, 0);
+    SetHandleInformation(plt_pipe_input_write, HANDLE_FLAG_INHERIT, 0);
+
+    PROCESS_INFORMATION plt_process_info{};
+    STARTUPINFO plt_startup_info{};
+    plt_startup_info.cb = sizeof(plt_startup_info);
+    plt_startup_info.hStdInput = plt_pipe_input_read;
+    plt_startup_info.dwFlags |= STARTF_USESTDHANDLES;
+
+    CHAR plt_cmd[] = "gnuplot.exe -e \"set xrange[-3:3]; set yrange[-3:3]; plot '-' with lp; pause -1;\"";
+    if (CreateProcessA(nullptr,
+                       plt_cmd,
+                       nullptr, nullptr, TRUE, 0, nullptr, nullptr,
+                       &plt_startup_info,
+                       &plt_process_info)) {
+        CloseHandle(plt_process_info.hProcess);
+        CloseHandle(plt_process_info.hThread);
+        WriteFile(plt_pipe_input_write, plt_input.data(), plt_input.size() * sizeof(plt_input[0]), nullptr, nullptr);
+        DebugBreak();
+        CloseHandle(plt_pipe_input_write);
+    }
 #endif
 }
 
@@ -128,11 +158,11 @@ void geom_e2d_list::plt(const geom_e2d_list* poly, ...)
 // ------------------------------------------------------------------------------------ //
 
 void
-geom_collide(const geom_e2d& e1, const geom_e2d& e2, geom_c2d_list* collision)
+geom_collide(geom_e2d e1, geom_e2d e2, geom_c2d_list* collision)
 {
     geom_real_t det;
-    const geom_p2d v1 = e1.t - e1.s;
-    const geom_p2d v2 = e2.t - e2.s;
+    geom_p2d v1 = e1.t - e1.s;
+    geom_p2d v2 = e2.t - e2.s;
     det = geom_p2d::det(v1, v2);
     if(det != 0.0)
     {
@@ -162,6 +192,11 @@ geom_collide(const geom_e2d& e1, const geom_e2d& e2, geom_c2d_list* collision)
     }
     else
     {
+        if (geom_p2d::dot(v1, v2) < 0) {
+            std::swap(e2.s, e2.t);
+            v2 = -1 * v2;
+        }
+
         // Edges are collinear.
         const geom_p2d q1 = e2.s - e1.t;
         const geom_p2d q2 = e2.t - e1.s;
