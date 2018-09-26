@@ -1,8 +1,8 @@
 // ==========================================================================================
 // Copyright (C) Goddamn Industries 2016. All Rights Reserved.
-// 
+//
 // This software or any its part is distributed under terms of Goddamn Industries End User
-// License Agreement. By downloading or using this software or any its part you agree with 
+// License Agreement. By downloading or using this software or any its part you agree with
 // terms of Goddamn Industries End User License Agreement.
 // ==========================================================================================
 
@@ -24,24 +24,24 @@
 
 /*!
  * Defines an assert, that should replace application's default asserts.
- * It is used to test the correct behavior for incorrect input data that application should fail on. 
+ * It is used to test the correct behavior for incorrect input data that application should fail on.
  */
-#define testing_assert(expression, message, ...) \
+#define COMM_TESTING_ASSERT(expression, message, ...) \
 	do { \
 		testing_analysis_assume(expression); \
 		if (!(expression)) { \
 			throw ::goddamn_testing::assertion_exception(message, __FILE__, __FUNCTION__, __LINE__, #expression); \
 		} \
-	} while (false); 
+	} while (false);
 
 /*!
  * Defines an assert, that should replace application's default fatal asserts.
- * It is used to test the correct behavior for incorrect input data that application should fail on. 
+ * It is used to test the correct behavior for incorrect input data that application should fail on.
  */
 #define testing_assert_false(message, ...) \
 	do { \
 		throw ::goddamn_testing::fatal_assertion_exception(message, __FILE__, __FUNCTION__, __LINE__); \
-	} while (false); 
+	} while (false);
 
 /*!
  * Defines the verification statement that should succeed for correct testing code.
@@ -51,7 +51,7 @@
 		if (!(__VA_ARGS__)) { \
 			throw ::goddamn_testing::verification_exception(__FILE__, __FUNCTION__, __LINE__); \
 		} \
-	} while (false); 
+	} while (false);
 
 /*!
  * Defines a unit test.
@@ -107,8 +107,8 @@ namespace goddamn_testing
 	};	// struct fatal_assertion_exception
 
 	/*!
-	 * Exception being thrown of the failure of the test. 
-	 * Are caught internally by the testing engine. 
+	 * Exception being thrown of the failure of the test.
+	 * Are caught internally by the testing engine.
 	 */
 	struct verification_exception final : public testing_exception
 	{
@@ -198,7 +198,7 @@ namespace goddamn_testing
 				template_foreach_impl<TRestTypes...>::foreach(func);
 			}
 		};	// struct template_foreach_impl<TFirstType, TRestTypes...>
-		
+
 		template<>
 		struct template_foreach_impl<> final
 		{

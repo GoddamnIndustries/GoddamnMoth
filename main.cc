@@ -1,5 +1,5 @@
 
-#include "libGeometry2D/src/GeomEdge.hh"
+#include "libGeometry2D/src/GeomEdgeList.hh"
 #include <random>
 #include <ctime>
 #include <fstream>
@@ -16,7 +16,7 @@ int main()
     geom_e2d_list* domain2 = geom_e2d_list_factory::new_circle_ccw({5, 5}, 0.5);
     domain2 = geom_e2d_list_factory::copy_rev(domain2);
 
-    std::vector<std::vector<StatsV>> estimator{100, std::vector<StatsV>{100}};
+    std::vector<std::vector<StatsV>> estimator{150, std::vector<StatsV>{150}};
 
     std::default_random_engine gen_random;
 
@@ -66,7 +66,7 @@ int main()
 
                     v = (p - p0) / dt;
 
-                    //v = geom_p2d::rot(v, (geom_real_t) gen_random() / gen_random.max() * GEOM_PI * 2);
+                    //v = geom_p2d::rotate(v, (geom_real_t) gen_random() / gen_random.max() * GEOM_PI * 2);
                     p.u = v.x;
                     p.v = v.y;
                     //geom_e2d_list::push(t, p);
