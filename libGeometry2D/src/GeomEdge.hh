@@ -32,10 +32,12 @@ int fsgn(T val)
 ///
 /// Point in 2D space.
 ///
-struct geom_p2d final
+struct geom_p2d
 {
 	geom_real_t x{};
 	geom_real_t y{};
+    geom_real_t u{};
+    geom_real_t v{};
 
 public:
     geom_p2d operator+() const
@@ -56,6 +58,7 @@ public:
 		return { x - p.x, y - p.y };
 	}
 
+public:
     geom_p2d operator*(geom_real_t a) const
     {
         return { a * x, a * y };
@@ -64,6 +67,15 @@ public:
 	{
 		return { a * p.x, a * p.y };
 	}
+
+    geom_p2d operator/(geom_real_t a) const
+    {
+        return { x / a, y / a };
+    }
+    friend geom_p2d operator/(geom_real_t a, const geom_p2d& p)
+    {
+        return { p.x / a, p.y / a };
+    }
 
 public:
     bool operator==(const geom_p2d& p) const
@@ -108,7 +120,16 @@ public:
 public:
     static geom_p2d normal(const geom_p2d& p1)
     {
-	    return {p1.y, -p1.x};
+        geom_p2d n{p1.y, -p1.x};
+        return n / len(n);
+    }
+
+public:
+    static geom_p2d rot(const geom_p2d& n, geom_real_t a)
+    {
+        geom_real_t c = cos(a);
+        geom_real_t s = sin(a);
+        return{ n.x * c - n.y * s, n.x * s + n.y * c };
     }
 
 public:
@@ -215,6 +236,28 @@ public:
                 }
             }
         }
+        return false;
+    }
+
+    /// Calculates reflection of two edges.
+    static bool reflect(const geom_e2d& e1, const geom_e2d& e2, geom_e2d& e)
+    {
+        if (intersect(e1, e2, e) && e.s == e.t) {
+            geom_p2d p = e.s;
+            geom_real_t l1 = geom_p2d::len(e2.s - p);
+            geom_real_t l2 = geom_p2d::len(e2.t - p);
+            geom_p2d v = (e2.s - p) / l1;
+            geom_p2d n = geom_p2d::normal(e1.s - p);
+
+            geom_real_t cos = geom_p2d::dot(v, n);
+            geom_real_t sin = geom_p2d::det(v, n);
+            geom_p2d q{n.x * cos - n.y * sin, n.x * sin + n.y * cos};
+            geom_p2d w{n.x * cos - n.y * sin, n.x * sin + n.y * cos};
+            e.s = e2.s;
+            e.t = p + l2 * q;
+            return true;
+        }
+        e = e2;
         return false;
     }
 
@@ -366,6 +409,18 @@ public:
             }
         } while (move(poly, head));
         return intersections % 2 == 1;
+    }
+
+    static bool reflect(const geom_e2d_list* poly, const geom_e2d& e2, geom_e2d e)
+    {
+        const geom_e2d_list* head = poly;
+        do {
+            geom_e2d e1 = poly->edge();
+            if (geom_e2d::reflect(e1, e2, e)) {
+                return true;
+            }
+        } while (move(poly, head));
+        return false;
     }
 
 public:

@@ -92,10 +92,11 @@ std::string geom_e2d_list::plt(const geom_e2d_list* poly, ...)
     const geom_e2d_list* head = poly;
     do {
         plt_stream << poly->point.x << " " << poly->point.y << " ";
+        plt_stream << poly->point.u << " " << poly->point.v << " ";
         plt_stream << std::endl;
     } while (geom_e2d_list::move(poly, head));
-    plt_stream << poly->point.x << " " << poly->point.y << " ";
-    plt_stream << std::endl;
+    //plt_stream << poly->point.x << " " << poly->point.y << " ";
+    //plt_stream << std::endl;
     plt_stream << "e";
     plt_stream << std::endl;
     va_end(poly_list);
@@ -139,17 +140,19 @@ std::string geom_e2d_list::plt(const geom_e2d_list* poly, ...)
     plt_startup_info.hStdInput = plt_pipe_input_read;
     plt_startup_info.dwFlags |= STARTF_USESTDHANDLES;
 
-    CHAR plt_cmd[] = "gnuplot.exe -e \"set xrange[-3:3]; set yrange[-3:3]; plot '-' with lp; pause -1;\"";
+    CHAR plt_cmd[] = "gnuplot.exe -p -e \"set terminal png size 10000,2000; set output 'C:\\Users\\Oleg\\Desktop\\a1488.png'; set xrange[0:10]; set yrange[0:2]; plot '-' with vectors\"";
     if (CreateProcessA(nullptr,
                        plt_cmd,
                        nullptr, nullptr, TRUE, 0, nullptr, nullptr,
                        &plt_startup_info,
                        &plt_process_info)) {
+
+        WriteFile(plt_pipe_input_write, plt_input.data(), plt_input.size() * sizeof(plt_input[0]), nullptr, nullptr);
+        CloseHandle(plt_pipe_input_write);
+
+        WaitForSingleObject(plt_process_info.hProcess, INFINITE);
         CloseHandle(plt_process_info.hProcess);
         CloseHandle(plt_process_info.hThread);
-        WriteFile(plt_pipe_input_write, plt_input.data(), plt_input.size() * sizeof(plt_input[0]), nullptr, nullptr);
-        DebugBreak();
-        CloseHandle(plt_pipe_input_write);
     }
 #endif
     return "";
