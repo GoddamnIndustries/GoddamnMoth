@@ -49,14 +49,18 @@ bool geom_e2d::reflect(const geom_e2d& e1, const geom_e2d& e2, geom_e2d& e)
         geom_p2d p = e.s;
         geom_real_t l1 = geom_p2d::len(e2.s - p);
         geom_real_t l2 = geom_p2d::len(e2.t - p);
-        geom_p2d v = (p - e2.s) / l1;
+        geom_p2d v = (e2.s - p) / l1;
         geom_p2d n = geom_p2d::normal(e1.s - p);
 
         geom_real_t cos = geom_p2d::dot(v, n);
         geom_real_t sin = geom_p2d::det(v, n);
-        geom_p2d q{n.x * cos - n.y * sin, n.x * sin + n.y * cos};
-        e.s = e2.s;
-        e.t = p + l2 * q;
+        if (cos > 0.0) {
+            geom_p2d q{n.x * cos - n.y * sin, n.x * sin + n.y * cos};
+            e.s = e2.s;
+            e.t = p + l2 * q;
+        } else {
+            e = e2;
+        }
         return true;
     }
     e = e2;
@@ -74,7 +78,7 @@ std::ostream& operator<<(std::ostream& stream, const geom_e2d& e)
 
 std::istream& operator>>(std::istream& stream, geom_e2d& e)
 {
-    abort();
+    std::abort();
 }
 
 std::string geom_e2d::str(const geom_e2d& e)
@@ -120,8 +124,10 @@ COMM_UNIT_TEST()
     geom_e2d e;
 
     // Reflection with the CCW normal.
+    // ( e2 is a diode wall: in first case particle simply files through it, reflects in second. )
+    COMM_UNIT_VERIFY_F(geom_e2d::reflect({{0.0,2.0}, {4.0,2.0}}, {{0.0,4.0}, {1.0,3.0}}, e));
     COMM_UNIT_VERIFY_T(geom_e2d::reflect({{0.0,2.0}, {4.0,2.0}}, {{0.0,4.0}, {4.0,0.0}}, e) &&
-                       e == geom_e2d{{0.0,4.0}, {0.0, 0.0}});
-    COMM_UNIT_VERIFY_T(geom_e2d::reflect({{4.0,2.0}, {0.0,2.0}}, {{0.0,4.0}, {4.0,0.0}}, e) &&
-                       e == geom_e2d{{0.0,4.0}, {4.0, 4.0}});
+                       e == geom_e2d{{0.0,4.0}, {4.0, 0.0}});
+    COMM_UNIT_VERIFY_T(geom_e2d::reflect({{0.0,2.0}, {4.0,2.0}}, {{4.0,0.0}, {1.0,3.0}}, e) &&
+                       e == geom_e2d{{4.0,0.0}, {1.0, 1.0}});
 };

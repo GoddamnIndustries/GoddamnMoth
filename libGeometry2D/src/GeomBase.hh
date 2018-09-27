@@ -18,7 +18,11 @@
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-#define GEOM_CORE __declspec(dllexport)
+#define GEOM_HOST
+#define GEOM_DEVICE
+#define GEOM_GLOBAL
+
+#define GEOM_CORE //__declspec(dllexport)
 
 #ifdef M_PI
 #define GEOM_PI M_PI

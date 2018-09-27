@@ -106,7 +106,11 @@ int main()
         }
     }
 
+#if _WIN32
     std::ofstream output("H:\\GoddamnOpuwenijSolver\\data.dat");
+#else
+    std::ofstream output("data1.dat");
+#endif
     for (auto ii = 0; ii < estimator.size(); ++ii) {
         for (auto jj = 0; jj < estimator[ii].size(); ++jj) {
             if (ii == 0 && jj == 0) continue;
