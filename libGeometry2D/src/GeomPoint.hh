@@ -149,8 +149,6 @@ public:
     }
 
 public:
-    /// String representation of the edge
-    /// acceptable by the scripting engine.
     GEOM_HOST
     static std::string str(const geom_p2d& p1);
 };	// struct geom_p2d
@@ -159,3 +157,6 @@ GEOM_HOST GEOM_CORE
 std::ostream& operator<<(std::ostream& stream, const geom_p2d& p);
 GEOM_HOST GEOM_CORE
 std::istream& operator>>(std::istream& stream, geom_p2d& p);
+
+static geom_p2d geom_p_inf{+500000.0, +500000.0};
+static geom_p2d geom_m_inf{-500000.0, -500000.0};

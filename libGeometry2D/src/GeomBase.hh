@@ -44,6 +44,7 @@
 
 using geom_real_t = double;
 using geom_size_t = std::size_t;
+using geom_diff_t = std::ptrdiff_t;
 
 using geom_radians_t = geom_real_t;
 using geom_degrees_t = geom_real_t;

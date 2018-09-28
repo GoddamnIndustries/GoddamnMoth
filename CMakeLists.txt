@@ -10,4 +10,4 @@ add_executable(GoddamnOpuwenijSolver main.cc
         libGeometry2D/src/GeomBase.hh
         libGeometry2D/src/GeomEdge.hh libGeometry2D/src/GeomEdge.cc
         libGeometry2D/src/GeomPoint.hh libGeometry2D/src/GeomPoint.cc
-        libGeometry2D/src/GeomEdgeList.cc libGeometry2D/src/GeomEdgeList.hh libCommon/src/CommTest.hh)
+        libGeometry2D/src/GeomEdgeList.cc libGeometry2D/src/GeomEdgeList.hh libCommon/src/CommTest.hh libGeometry2D/src/GeomPoly.cc libGeometry2D/src/GeomPoly.hh)

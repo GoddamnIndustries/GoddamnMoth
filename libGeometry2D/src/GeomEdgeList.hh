@@ -316,12 +316,12 @@ public:
                 geom_e2d e1 = poly1->edge();
                 geom_e2d_list::push(un, poly1->point);
                 do {
-                    geom_e2d e0{};
+                    geom_e2d e{};
                     geom_e2d e2 = poly2->edge();
-                    if (geom_e2d::intersect(e1, e2, e0)) {
+                    if (geom_e2d::intersect(e1, e2, e)) {
                         auto a = geom_e2d::angle(e1, e2);
                         std::cerr << a << std::endl;
-                        geom_e2d_list::push(un, e0.s);
+                        geom_e2d_list::push(un, e.s);
                         std::swap(poly1, poly2);
                         std::swap(head1, head2);
                         break;

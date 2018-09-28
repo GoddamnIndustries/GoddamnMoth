@@ -1,5 +1,6 @@
 
 #include "libGeometry2D/src/GeomEdgeList.hh"
+#include "libGeometry2D/src/GeomPoly.hh"
 #include <random>
 #include <ctime>
 #include <fstream>
@@ -12,6 +13,7 @@ struct StatsV
 
 int main()
 {
+    geom_poly2d<>::area(geom_poly2d<>{});
     geom_e2d_list* domain1 = geom_e2d_list_factory::new_rect_ccw({0.0, 0.0}, {10.0, 10.0});
     geom_e2d_list* domain2 = geom_e2d_list_factory::new_circle_ccw({5, 5}, 0.5);
     domain2 = geom_e2d_list_factory::copy_rev(domain2);
