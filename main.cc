@@ -9,16 +9,16 @@ struct StatsV
 {
     float u1{}, v1{};
     float u2{}, v2{};
+    unsigned n{};
 };
 
 int main()
 {
-    geom_poly2d<>::area(geom_poly2d<>{});
     geom_e2d_list* domain1 = geom_e2d_list_factory::new_rect_ccw({0.0, 0.0}, {10.0, 10.0});
-    geom_e2d_list* domain2 = geom_e2d_list_factory::new_circle_ccw({5, 5}, 0.5);
+    geom_e2d_list* domain2 = geom_e2d_list_factory::new_circle_ccw({4, 5}, 2.0);
     domain2 = geom_e2d_list_factory::copy_rev(domain2);
 
-    std::vector<std::vector<StatsV>> estimator{150, std::vector<StatsV>{150}};
+    std::vector<std::vector<StatsV>> estimator{100, std::vector<StatsV>{100}};
 
     std::default_random_engine gen_random;
 
@@ -42,12 +42,12 @@ int main()
         geom_e2d_list* t = nullptr;
         for (int k = 0; k < particles.size(); ++k) {
             auto& p = particles[k];
-            geom_real_t t0 = 0.0, t1 = 20.0;
+            geom_real_t t0 = 0.0, t1 = 25.0;
             geom_size_t n = 1;
             {
                 geom_p2d v;
-                v.x = std::normal_distribution<double>(0.2, 0.09)(gen_random);
-                v.y = std::normal_distribution<double>(0.0, 0.09)(gen_random);
+                v.x = std::normal_distribution<double>(0.4, 0.1)(gen_random);
+                v.y = std::normal_distribution<double>(0.0, 0.1)(gen_random);
                 for (geom_size_t i = 0; i < n; ++i) {
                     geom_real_t dt = (t1 - t0) / n;
                     geom_p2d p1 = p + v * dt, p0 = p;
@@ -68,7 +68,7 @@ int main()
 
                     v = (p - p0) / dt;
 
-                    //v = geom_p2d::rotate(v, (geom_real_t) gen_random() / gen_random.max() * GEOM_PI * 2);
+                    //v = geom_p2d::rotate(v, ((geom_real_t) gen_random() / gen_random.max() - 0.5) * GEOM_PI / 3);
                     p.u = v.x;
                     p.v = v.y;
                     //geom_e2d_list::push(t, p);
@@ -76,19 +76,21 @@ int main()
             }
             //geom_e2d_list::push(t, p);
 
-            size_t ii = (size_t)round(p.x * (estimator.size() - 1) / 10);
-            size_t jj = (size_t)round(p.y * (estimator[0].size() - 1) / 10);
-            if (ii >= 0 && jj >= 0) {
+            int ii = (size_t)round(p.x * (estimator.size() - 1) / 10);
+            int jj = (size_t)round(p.y * (estimator[0].size() - 1) / 10);
+            if (ii >= 0 && jj >= 0 && ii < estimator.size() && jj < estimator[0].size()) {
                 estimator[ii][jj].u1 += p.u;
                 estimator[ii][jj].v1 += p.v;
                 estimator[ii][jj].u2 += p.u * p.u;
                 estimator[ii][jj].v2 += p.v * p.v;
+                estimator[ii][jj].n++;
             }
         }
 
         double max_dispersion = 0.0;
         for (auto ii = 1; ii < estimator.size(); ++ii) {
             for (auto jj = 1; jj < estimator[ii].size(); ++jj) {
+                auto n = estimator[ii][jj].n;
                 double expected_u = estimator[ii][jj].u1 / m;
                 double expected_v = estimator[ii][jj].v1 / m;
                 double dispersion_x = (estimator[ii][jj].u2 / m - expected_u * expected_u) / m;
@@ -116,10 +118,14 @@ int main()
     for (auto ii = 0; ii < estimator.size(); ++ii) {
         for (auto jj = 0; jj < estimator[ii].size(); ++jj) {
             if (ii == 0 && jj == 0) continue;
+            auto n = estimator[ii][jj].n;
             double expected_u = estimator[ii][jj].u1 / m;
             double expected_v = estimator[ii][jj].v1 / m;
-            output << 10 * ii / float(estimator.size()) << " " << 10 * jj / float(estimator[ii].size())<< " "
-            << expected_u << " " << expected_v << std::endl;
+            double ll = 1.0;//std::hypot(expected_u, expected_v) * float(estimator.size());
+            if (ll > 0.0) {
+                output << 10 * ii / float(estimator.size()) << " " << 10 * jj / float(estimator[ii].size()) << " "
+                       << expected_u / ll << " " << expected_v / ll << std::endl;
+            }
         }
     }
 

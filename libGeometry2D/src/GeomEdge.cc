@@ -17,6 +17,9 @@ std::istream& operator>>(std::istream& stream, geom_e2d& e)
     std::abort();
 }
 
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
 std::string geom_e2d::str(const geom_e2d& e)
 {
     std::stringstream stream;

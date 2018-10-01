@@ -18,9 +18,15 @@
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
+#if __NVCC__
+#define GEOM_HOST __host__
+#define GEOM_DEVICE __device__
+#define GEOM_GLOBAL __global__
+#else
 #define GEOM_HOST
 #define GEOM_DEVICE
 #define GEOM_GLOBAL
+#endif
 
 #define GEOM_CORE //__declspec(dllexport)
 
