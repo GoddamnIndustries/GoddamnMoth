@@ -1,9 +1,10 @@
 
-#include "libGeometry2D/src/GeomEdgeList.hh"
+#include "libGeometry2D/src/GeomEdge.hh"
 #include "libGeometry2D/src/GeomPoly.hh"
 #include <random>
 #include <ctime>
 #include <fstream>
+#include <iostream>
 
 struct StatsV
 {
@@ -18,7 +19,7 @@ int main()
     geom_e2d_list* domain2 = geom_e2d_list_factory::new_circle_ccw({4, 5}, 2.0);
     domain2 = geom_e2d_list_factory::copy_rev(domain2);
 
-    std::vector<std::vector<StatsV>> estimator{100, std::vector<StatsV>{100}};
+    std::vector<std::vector<StatsV>> estimator{50, std::vector<StatsV>{50}};
 
     std::default_random_engine gen_random;
 
@@ -42,12 +43,15 @@ int main()
         geom_e2d_list* t = nullptr;
         for (int k = 0; k < particles.size(); ++k) {
             auto& p = particles[k];
-            geom_real_t t0 = 0.0, t1 = 25.0;
+            geom_real_t t0 = 0.0, t1 = 20.0;
             geom_size_t n = 1;
             {
+                geom_p2d v0{0.4, 0.0};
+                geom_real_t mass = 1;
+                geom_real_t stddev = mass * geom_p2d::len(v0) / 3;
                 geom_p2d v;
-                v.x = std::normal_distribution<double>(0.4, 0.1)(gen_random);
-                v.y = std::normal_distribution<double>(0.0, 0.1)(gen_random);
+                v.x = std::normal_distribution<double>(v0.x, 0.1)(gen_random);
+                v.y = std::normal_distribution<double>(v0.y, 0.1)(gen_random);
                 for (geom_size_t i = 0; i < n; ++i) {
                     geom_real_t dt = (t1 - t0) / n;
                     geom_p2d p1 = p + v * dt, p0 = p;
@@ -76,8 +80,8 @@ int main()
             }
             //geom_e2d_list::push(t, p);
 
-            int ii = (size_t)round(p.x * (estimator.size() - 1) / 10);
-            int jj = (size_t)round(p.y * (estimator[0].size() - 1) / 10);
+            int ii = (int)round(p.x * (estimator.size() - 1) / 10);
+            int jj = (int)round(p.y * (estimator[0].size() - 1) / 10);
             if (ii >= 0 && jj >= 0 && ii < estimator.size() && jj < estimator[0].size()) {
                 estimator[ii][jj].u1 += p.u;
                 estimator[ii][jj].v1 += p.v;

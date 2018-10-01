@@ -17,13 +17,39 @@ std::istream& operator>>(std::istream& stream, geom_e2d& e)
     std::abort();
 }
 
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
-
 std::string geom_e2d::str(const geom_e2d& e)
 {
     std::stringstream stream;
     stream << e;
+    return stream.str();
+}
+
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
+std::ostream& operator<<(std::ostream& stream, const geom_e2d_list* poly)
+{
+    stream << "(";
+    const geom_e2d_list* head = poly;
+    do {
+        stream << poly->point;
+        if (poly->next != head) {
+            stream << ", ";
+        }
+    } while (geom_e2d_list::move(poly, head));
+    stream << ")";
+    return stream;
+}
+
+std::istream& operator>>(std::istream& stream, geom_e2d_list* poly)
+{
+    abort();
+}
+
+std::string geom_e2d_list::str(const geom_e2d_list* poly)
+{
+    std::stringstream stream;
+    stream << poly;
     return stream.str();
 }
 

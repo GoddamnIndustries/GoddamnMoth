@@ -8,9 +8,9 @@
 
 using geom_p2d_array = std::vector<geom_p2d>;
 
-///
-/// 2D polygon base container class.
-///
+/**
+ * 2D polygon base container.
+ */
 struct GEOM_CORE geom_poly2d_base : protected geom_p2d_array
 {
     friend struct geom_poly2d_iter;
@@ -24,41 +24,32 @@ public:
     virtual ~geom_poly2d_base() = default;
 };  // struct geom_poly2d_base
 
-///
-/// 2D polygon vertex/edge iterator.
-///
+/**
+ * 2D polygon vertex/edge iterator.
+ */
 struct GEOM_CORE geom_poly2d_iter final
 {
-    const geom_poly2d_base& poly;
+    const geom_poly2d_base* poly = nullptr;
     geom_diff_t offset = 1;
-    size_t index = 0;
-
-public:
-    GEOM_HOST GEOM_DEVICE
-    geom_poly2d_iter& operator=(const geom_poly2d_iter& iter)
-    {
-        assert(&poly == &iter.poly);
-        offset = iter.offset, index = iter.index;
-        return *this;
-    }
+    geom_size_t index = 0;
 
 public:
     GEOM_HOST GEOM_DEVICE
     bool operator==(const geom_poly2d_iter& iter) const
     {
-        return (&poly == &iter.poly) && (index == iter.index);
+        return (poly == iter.poly) && (index == iter.index);
     }
     GEOM_HOST GEOM_DEVICE
     bool operator!=(const geom_poly2d_iter& iter) const
     {
-        return (&poly != &iter.poly) || (index == iter.index);
+        return (poly != iter.poly) || (index != iter.index);
     }
 
 public:
     GEOM_HOST GEOM_DEVICE
     geom_poly2d_iter operator+(const geom_diff_t delta) const
     {
-        return {poly, offset, (index + offset * delta) % poly.size()};
+        return {poly, offset, (index + offset * delta) % poly->size()};
     }
     GEOM_HOST GEOM_DEVICE
     geom_poly2d_iter& operator+=(const geom_diff_t delta)
@@ -69,7 +60,7 @@ public:
     GEOM_HOST GEOM_DEVICE
     geom_poly2d_iter operator-(const geom_diff_t delta) const
     {
-        return {poly, offset, (index - offset * delta) % poly.size()};
+        return {poly, offset, (index - offset * delta) % poly->size()};
     }
     GEOM_HOST GEOM_DEVICE
     geom_poly2d_iter& operator-=(const geom_diff_t delta)
@@ -106,12 +97,17 @@ public:
     {
         return *this + 1;
     }
+    GEOM_HOST GEOM_DEVICE
+    geom_poly2d_iter prev() const
+    {
+        return *this - 1;
+    }
 
 public:
     GEOM_HOST GEOM_DEVICE
     geom_p2d point() const
     {
-        return poly[index];
+        return (*poly)[index];
     }
     GEOM_HOST GEOM_DEVICE
     geom_e2d edge() const
@@ -120,9 +116,9 @@ public:
     }
 };  // struct geom_poly2d_iter
 
-///
-/// 2D polygon (list of points in 2D space).
-///
+/**
+ * 2D polygon.
+ */
 struct GEOM_CORE geom_poly2d final : public geom_poly2d_base
 {
 public:
@@ -135,20 +131,37 @@ public:
     GEOM_HOST GEOM_DEVICE
     geom_poly2d_iter iter() const
     {
-        return {*this, +1};
+        return {this, +1};
     }
     GEOM_HOST GEOM_DEVICE
     geom_poly2d_iter iter_rev() const
     {
-        return {*this, -1};
+        return {this, -1};
     }
 
 public:
     GEOM_HOST
-    static void pull(geom_poly2d& poly, const geom_p2d& p)
+    static geom_e2d_list* lst(const geom_poly2d& poly)
     {
-        poly.insert(poly.begin(), p);
+        geom_e2d_list* list = nullptr;
+        geom_poly2d_iter iter = poly.iter();
+        do {
+            geom_e2d_list::pull(list, iter.point());
+        } while ((++iter) != poly.iter());
+        return list->next;
     }
+    GEOM_HOST
+    static geom_e2d_list* lst_rev(const geom_poly2d& poly)
+    {
+        geom_e2d_list* list = nullptr;
+        geom_poly2d_iter iter = poly.iter_rev();
+        do {
+            geom_e2d_list::pull(list, iter.point());
+        } while ((++iter) != poly.iter());
+        return list;
+    }
+
+public:
     GEOM_HOST
     static void push(geom_poly2d& poly, const geom_p2d& p)
     {
@@ -178,12 +191,15 @@ public:
         geom_real_t area = 0.0;
         geom_poly2d_iter iter = poly.iter();
         do {
-            area += geom_p2d::det(iter.edge().t, iter.edge().s) * 0.5;
+            area += geom_p2d::det(iter.edge().s, iter.edge().t) * 0.5;
         } while ((++iter) != poly.iter());
         return area;
     }
 
 public:
+    /**
+     * Check if point is inside polygon.
+     */
     GEOM_HOST GEOM_DEVICE
     static bool contains(const geom_poly2d& poly, const geom_p2d& p)
     {
@@ -205,18 +221,59 @@ public:
     }
 
 public:
-    GEOM_HOST GEOM_DEVICE
-    static bool reflect(const geom_poly2d& poly, const geom_e2d& e2, geom_e2d e)
+    /**
+     * Intersection of two polygons.
+     */
+    GEOM_HOST
+    friend geom_poly2d operator*(const geom_poly2d& poly1, const geom_poly2d& poly2)
     {
-        geom_poly2d_iter iter = poly.iter();
+        std::abort();
+    }
+
+    /**
+     * Union of two polygons.
+     */
+    GEOM_HOST
+    friend geom_poly2d operator+(const geom_poly2d& poly1, const geom_poly2d& poly2)
+    {
+        /* Make CCW list for polygons. */
+        geom_e2d_list* list1;
+        if (area(poly1) > 0.0) {
+            list1 = lst(poly1);
+        } else {
+            list1 = lst_rev(poly1);
+        }
+        geom_e2d_list* list2;
+        if (area(poly2) > 0.0) {
+            list2 = lst(poly2);
+        } else {
+            list2 = lst_rev(poly2);
+        }
+
+        geom_poly2d poly;
+        geom_e2d_list* head1 = list1;
+        geom_e2d_list::clip(list1, list2);
         do {
-            /// @todo Incorrect!
-            geom_e2d e1 = iter.edge();
-            if (geom_e2d::reflect(e1, e2, e)) {
-                return true;
+            geom_poly2d::push(poly, list1->point);
+            if (list1->next_ext != nullptr) {
+                list1 = list1->next_ext;
+            } else {
+                list1 = list1->next;
             }
-        } while ((++iter) != poly.iter());
-        return false;
+        } while (list1 != head1);
+
+        delete list1;
+        delete list2;
+        return poly;
+    }
+
+    /**
+     * Difference of two polygons.
+     */
+    GEOM_HOST
+    friend geom_poly2d operator-(const geom_poly2d& poly1, const geom_poly2d& poly2)
+    {
+        std::abort();
     }
 
 public:
@@ -226,9 +283,6 @@ public:
     static std::string plt(const geom_poly2d& poly);
 };  // struct geom_poly2d
 
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
-
 GEOM_HOST GEOM_CORE
 std::ostream& operator<<(std::ostream& stream, const geom_poly2d& poly);
 GEOM_HOST GEOM_CORE
@@ -237,9 +291,9 @@ std::istream& operator>>(std::istream& stream, geom_poly2d& poly);
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-///
-/// 2D polygon utilities.
-///
+/**
+ * 2D polygon utilities.
+ */
 struct geom_poly2d_primitives
 {
 public:
@@ -249,19 +303,16 @@ public:
     GEOM_HOST
     static geom_poly2d rect(const geom_p2d& p_sw, const geom_p2d& p_ne)
     {
-        assert(p_sw.x < p_ne.x);
-        assert(p_sw.y < p_ne.y);
-        geom_p2d p_se{p_sw.x, p_ne.y};
-        geom_p2d p_nw{p_ne.x, p_sw.y};
+        geom_p2d p_se{p_ne.x, p_sw.y};
+        geom_p2d p_nw{p_sw.x, p_ne.y};
         geom_poly2d poly{};
         geom_poly2d::push(poly, p_sw);
-        geom_poly2d::push(poly, p_nw);
-        geom_poly2d::push(poly, p_ne);
         geom_poly2d::push(poly, p_se);
+        geom_poly2d::push(poly, p_ne);
+        geom_poly2d::push(poly, p_nw);
         return poly;
     }
 
-public:
     /**
      * Circle of the given radius with CCW orientation.
      */
@@ -328,5 +379,6 @@ public:
             }
             geom_poly2d::push(hull, p_i);
         }
+        return hull;
     }
-};  // struct geom_e2d_list_factory
+};  // struct geom_poly2d_primitives

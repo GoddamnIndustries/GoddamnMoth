@@ -13,6 +13,8 @@
  */
 #pragma once
 
+#include <iostream>
+
 #define testing_api //__declspec(dllexport)
 #define testing_analysis_assume(...) //__analysis_assume(__VA_ARGS__)
 
@@ -43,19 +45,23 @@
 		throw ::goddamn_testing::fatal_assertion_exception(message, __FILE__, __FUNCTION__, __LINE__); \
 	} while (false);
 
+#define COMM_CAT_(a, b) a##b
+#define COMM_CAT(a, b) COMM_CAT_(a, b)
+
+#define COMM_STR_(a) #a
+#define COMM_STR(a) COMM_STR_(a)
+
 /*!
  * Defines the verification statement that should succeed for correct testing code.
  */
 #define COMM_UNIT_VERIFY_T(...) \
 	do { \
 		if (!(__VA_ARGS__) /* NOLINT */) { \
-			throw ::goddamn_testing::verification_exception(__FILE__, __FUNCTION__, __LINE__); /* NOLINT */\
+		    std::cerr << __FILE__ << ":" << __LINE__ << ":: " << COMM_STR((__VA_ARGS__)) << std::endl; \
+			/*throw ::goddamn_testing::verification_exception(__FILE__, __FUNCTION__, __LINE__);*/ /* NOLINT */\
 		} \
 	} while (false);
 #define COMM_UNIT_VERIFY_F(...) COMM_UNIT_VERIFY_T(!(__VA_ARGS__))
-
-#define COMM_CAT_(a, b) a##b
-#define COMM_CAT(a, b) COMM_CAT_(a, b)
 
 /*!
  * Defines a unit test.

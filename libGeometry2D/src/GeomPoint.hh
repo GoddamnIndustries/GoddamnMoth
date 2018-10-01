@@ -1,9 +1,10 @@
 #pragma once
-#include "GeomBase.hh"
 
-///
-/// Point in 2D space.
-///
+#include "libGeometry2D/src/GeomBase.hh"
+
+/**
+ * Point in 2D space.
+ */
 struct GEOM_CORE geom_p2d
 {
     geom_real_t x{}, y{};
@@ -158,5 +159,8 @@ std::ostream& operator<<(std::ostream& stream, const geom_p2d& p);
 GEOM_HOST GEOM_CORE
 std::istream& operator>>(std::istream& stream, geom_p2d& p);
 
-static geom_p2d geom_p_inf{+500000.0, +500000.0};
-static geom_p2d geom_m_inf{-500000.0, -500000.0};
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
+static const geom_p2d geom_p_inf{+500000.0, +500000.0};
+static const geom_p2d geom_m_inf{-500000.0, -500000.0};

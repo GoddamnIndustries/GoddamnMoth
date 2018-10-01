@@ -44,7 +44,8 @@ std::string geom_poly2d::str(const geom_poly2d& poly)
 {
     std::stringstream stream;
     stream << poly;
-    return stream.str();
+    std::string poly_str = stream.str();
+    return poly_str;
 }
 
 GEOM_HOST
@@ -122,3 +123,50 @@ std::string geom_poly2d::plt(const geom_poly2d& poly)
 
 // >>>>----------------------------------------------------------------------------<<<< //
 // >>>>----------------------------------------------------------------------------<<<< //
+
+COMM_UNIT_TEST()
+{
+    geom_poly2d square = geom_poly2d_primitives::rect({0.0,0.0}, {1.0,1.0});
+    COMM_UNIT_VERIFY_T(geom_poly2d::area(square) == 1.0);
+    COMM_UNIT_VERIFY_T(geom_poly2d::len(square) == 4.0);
+
+    geom_poly2d circle = geom_poly2d_primitives::circle({0.0,0.0}, 1, 4);
+    COMM_UNIT_VERIFY_T(geom_poly2d::area(circle) == 2.0);
+};
+
+COMM_UNIT_TEST()
+{
+    geom_poly2d square = geom_poly2d_primitives::rect({0.0,0.0}, {1.0,1.0});
+    COMM_UNIT_VERIFY_T(geom_poly2d::str(square) ==
+                       "((0, 0), (1, 0), (1, 1), (0, 1))");
+};
+
+COMM_UNIT_TEST()
+{
+    geom_poly2d box1;
+    geom_poly2d box2;
+
+    /* Simplest possible intersection.
+     * ( And with reversed second box. )*/
+    box1 = geom_poly2d_primitives::rect({0.0,0.0}, {2.0,2.0});
+    box2 = geom_poly2d_primitives::rect({1.0,1.0}, {3.0,3.0});
+    COMM_UNIT_VERIFY_T(geom_poly2d::str(box1 + box2) ==
+                       "((0, 0), (2, 0), (2, 1), (3, 1),"
+                       " (3, 3), (1, 3), (1, 2), (0, 2))");
+    box1 = geom_poly2d_primitives::rect({0.0,0.0}, {2.0,2.0});
+    box2 = geom_poly2d_primitives::rect({3.0,3.0}, {1.0,1.0});
+    COMM_UNIT_VERIFY_T(geom_poly2d::str(box1 + box2) ==
+                       "((0, 0), (2, 0), (2, 1), (3, 1),"
+                       " (3, 3), (1, 3), (1, 2), (0, 2))");
+
+    box1 = geom_poly2d_primitives::rect({0.0,0.0}, {4.0,4.0});
+    box2 = geom_poly2d_primitives::rect({2.0,1.0}, {6.0,3.0});
+    COMM_UNIT_VERIFY_T(geom_poly2d::str(box1 + box2) ==
+                       "((0, 0), (4, 0), (4, 1), (6, 1),"
+                       " (6, 3), (4, 3), (4, 4), (0, 4))");
+    box1 = geom_poly2d_primitives::rect({0.0,0.0}, {4.0,4.0});
+    box2 = geom_poly2d_primitives::rect({6.0,3.0}, {2.0,1.0});
+    COMM_UNIT_VERIFY_T(geom_poly2d::str(box1 + box2) ==
+                       "((0, 0), (4, 0), (4, 1), (6, 1),"
+                       " (6, 3), (4, 3), (4, 4), (0, 4))");
+};
