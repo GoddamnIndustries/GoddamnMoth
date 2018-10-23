@@ -9,6 +9,7 @@
 #endif  // #ifdef NOMINMAX
 
 #include <cstdlib>
+#include <cassert>
 #include <cmath>
 
 #include <stdexcept>
@@ -19,41 +20,41 @@
 // ------------------------------------------------------------------------------------ //
 
 #if __NVCC__
-#define GEOM_HOST __host__
-#define GEOM_DEVICE __device__
-#define GEOM_GLOBAL __global__
+#define MOTH_HOST __host__
+#define MOTH_DEVICE __device__
+#define MOTH_GLOBAL __global__
 #else
-#define GEOM_HOST
-#define GEOM_DEVICE
-#define GEOM_GLOBAL
+#define MOTH_HOST
+#define MOTH_DEVICE
+#define MOTH_GLOBAL
 #endif
 
-#define GEOM_CORE //__declspec(dllexport)
+#define MOTH_CORE //__declspec(dllexport)
 
 #ifdef M_PI
-#define GEOM_PI M_PI
+#define MOTH_PI M_PI
 #else
-#define GEOM_PI (4.0 * atan(1.0))
+#define MOTH_PI (4.0 * atan(1.0))
 #endif
 
 #ifdef M_PI_2
-#define GEOM_PI_2 M_PI_2
+#define MOTH_PI_2 M_PI_2
 #else
-#define GEOM_PI_2 (2.0 * atan(1.0))
+#define MOTH_PI_2 (2.0 * atan(1.0))
 #endif
 
 #ifdef M_PI_4
-#define GEOM_PI_4 M_PI_4
+#define MOTH_PI_4 M_PI_4
 #else
-#define GEOM_PI_4 (1.0 * atan(1.0))
+#define MOTH_PI_4 (1.0 * atan(1.0))
 #endif
 
-using geom_real_t = double;
-using geom_size_t = std::size_t;
-using geom_diff_t = std::ptrdiff_t;
+using moth_real_t = double;
+using moth_size_t = std::size_t;
+using moth_diff_t = std::ptrdiff_t;
 
-using geom_radians_t = geom_real_t;
-using geom_degrees_t = geom_real_t;
+using moth_radians_t = moth_real_t;
+using moth_degrees_t = moth_real_t;
 
 template<typename T>
 int fsgn(T val)

@@ -39,7 +39,7 @@ std::istream& operator>>(std::istream& stream, geom_poly2d& poly)
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-GEOM_HOST
+MOTH_HOST
 std::string geom_poly2d::str(const geom_poly2d& poly)
 {
     std::stringstream stream;
@@ -48,7 +48,7 @@ std::string geom_poly2d::str(const geom_poly2d& poly)
     return poly_str;
 }
 
-GEOM_HOST
+MOTH_HOST
 std::string geom_poly2d::plt(const geom_poly2d& poly)
 {
     std::stringstream plt_stream;
@@ -141,6 +141,7 @@ COMM_UNIT_TEST()
                        "((0, 0), (1, 0), (1, 1), (0, 1))");
 };
 
+#if 0
 COMM_UNIT_TEST()
 {
     geom_poly2d box1;
@@ -170,3 +171,4 @@ COMM_UNIT_TEST()
                        "((0, 0), (4, 0), (4, 1), (6, 1),"
                        " (6, 3), (4, 3), (4, 4), (0, 4))");
 };
+#endif

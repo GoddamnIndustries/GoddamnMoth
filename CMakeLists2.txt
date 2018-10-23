@@ -1,0 +1,22 @@
+cmake_minimum_required(VERSION 3.10)
+
+project(GoddamnOpuwenijSolver)
+
+set(CMAKE_CUDA_COMPILER "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.0/bin/nvcc.exe")
+enable_language(CUDA)
+
+include_directories(.)
+
+set(CUDA_TOOLKIT_ROOT_DIR "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.0/")
+find_package(CUDA REQUIRED)
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} --expt-extended-lambda;--expt-relaxed-constexpr)
+SET(CUDA_PROPAGATE_HOST_FLAGS ON)
+SET(CUDA_SEPARABLE_COMPILATION OFF)
+
+set(CMAKE_CXX_STANDARD 14)
+cuda_add_executable(GoddamnOpuwenijSolver main.cu
+        libGeometry2D/src/GeomPolygoneList.hh
+        libGeometry2D/src/GeomBase.hh
+        libGeometry2D/src/GeomEdge.hh libGeometry2D/src/GeomEdge.cc
+        libGeometry2D/src/GeomPoint.hh libGeometry2D/src/GeomPoint.cc
+        libGeometry2D/src/GeomEdgeList.cc libGeometry2D/src/GeomEdgeList.hh libCommon/src/CommTest.hh libGeometry2D/src/GeomPoly.cc libGeometry2D/src/GeomPoly.hh)
