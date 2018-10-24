@@ -55,11 +55,11 @@ std::string geom_poly2d::plt(const geom_poly2d& poly)
     geom_poly2d_iter iter = poly.iter();
     do {
         plt_stream << iter.point().x << " " << iter.point().y << " ";
-        plt_stream << iter.point().u << " " << iter.point().v << " ";
+        //plt_stream << iter.point().u << " " << iter.point().v << " ";
         plt_stream << std::endl;
     } while ((++iter) != poly.iter());
     plt_stream << iter.point().x << " " << iter.point().y << " ";
-    plt_stream << iter.point().u << " " << iter.point().v << " ";
+    //plt_stream << iter.point().u << " " << iter.point().v << " ";
     plt_stream << std::endl;
     plt_stream << "e";
     plt_stream << std::endl;

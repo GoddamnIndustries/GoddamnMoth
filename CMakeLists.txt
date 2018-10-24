@@ -13,4 +13,4 @@ add_executable(GoddamnOpuwenijSolver main.cc
         libGeometry2D/src/GeomBox.hh libGeometry2D/src/GeomBox.cc
         libGeometry2D/src/GeomEdge.hh libGeometry2D/src/GeomEdge.cc
         libGeometry2D/src/GeomPoly.cc libGeometry2D/src/GeomPoly.hh
-        libGeometry2D/src/GeomTriangle.cc libGeometry2D/src/GeomTriangle.hh libGeometry2D/src/GeomTetrahedron.cc libGeometry2D/src/GeomTetrahedron.hh)
+        libGeometry2D/src/GeomTriangle.cc libGeometry2D/src/GeomTriangle.hh libGeometry2D/src/GeomTetrahedron.cc libGeometry2D/src/GeomTetrahedron.hh libGeometry2D/src/GeomDelaunay.cc libGeometry2D/src/GeomDelaunay.hh)

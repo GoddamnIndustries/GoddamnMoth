@@ -7,8 +7,8 @@
  */
 struct MOTH_CORE moth_p2d final
 {
-    moth_real_t x{}, y{};
-    moth_real_t u{}, v{};
+    moth_real_t x{};
+    moth_real_t y{};
 
 public:
     MOTH_HOST MOTH_DEVICE
@@ -234,7 +234,7 @@ public:
     MOTH_HOST MOTH_DEVICE
     moth_p3d& operator*=(moth_real_t a)
     {
-        return *this = a * *this;
+        return *this = *this * a;
     }
     MOTH_HOST MOTH_DEVICE
     friend moth_p3d operator*(moth_real_t a, const moth_p3d& p1)

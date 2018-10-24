@@ -98,7 +98,7 @@ namespace goddamn_testing
         testing_api assertion_exception(char const* const message, char const* const file
                 , char const* const function, unsigned line, char const* const expression)
         {
-            (void)message, file, function, line, expression;
+            //(void)message, file, function, line, expression;
         }
     };	// struct assertion_exception
 
@@ -112,7 +112,7 @@ namespace goddamn_testing
         testing_api fatal_assertion_exception(char const* const message, char const* const file
                 , char const* const function, unsigned line)
         {
-            (void)message, file, function, line;
+            //(void)message, file, function, line;
         }
     };	// struct fatal_assertion_exception
 
@@ -125,7 +125,7 @@ namespace goddamn_testing
     public:
         testing_api verification_exception(char const* const file, char const* const function, unsigned line)
         {
-            (void)file, function, line;
+            //(void)file, function, line;
         }
     };	// struct verification_exception
 
