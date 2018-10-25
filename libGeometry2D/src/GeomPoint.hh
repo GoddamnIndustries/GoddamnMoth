@@ -52,7 +52,7 @@ public:
     MOTH_HOST MOTH_DEVICE
     moth_p2d& operator-=(const moth_p2d& p1)
     {
-        return {x -= p1.x, y -= p1.y};
+        return *this = *this - p1;
     }
 
 public:
