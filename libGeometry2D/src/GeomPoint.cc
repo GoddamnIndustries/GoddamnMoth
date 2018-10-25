@@ -16,7 +16,7 @@ std::string moth_p2d::str(const moth_p2d& p1)
 MOTH_HOST MOTH_CORE
 std::ostream& operator<<(std::ostream& stream, const moth_p2d& p)
 {
-    return stream << "(" << p.x << ", " << p.y << ")";
+    return stream << "" << p.x << ", " << p.y << "";
 }
 MOTH_HOST MOTH_CORE
 std::istream& operator>>(std::istream& stream, moth_p2d& p)
@@ -38,7 +38,7 @@ std::string moth_p3d::str(const moth_p3d& p1)
 MOTH_HOST MOTH_CORE
 std::ostream& operator<<(std::ostream& stream, const moth_p3d& p)
 {
-    return stream << "(" << p.x << ", " << p.y << ", " << p.z << ")";
+    return stream << "" << p.x << ", " << p.y << ", " << p.z << "";
 }
 MOTH_HOST MOTH_CORE
 std::istream& operator>>(std::istream& stream, moth_p3d& p)
