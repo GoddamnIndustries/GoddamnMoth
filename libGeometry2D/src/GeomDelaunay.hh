@@ -151,7 +151,7 @@ static std::vector<moth_cell2d> moth_triangulate_ruppert(std::vector<moth_e2d> E
 
 
     std::vector<moth_cell2d> tr = moth_triangulate_bowyer_watson(P);
-    for (moth_size_t m = 0; m < 4; ++m) {
+    for (moth_size_t m = 0; m < 3; ++m) {
 
         /* Find the bad-quality triangles. */
         std::vector<moth_size_t> tr_bad{};

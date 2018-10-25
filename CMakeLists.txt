@@ -3,7 +3,11 @@ project(GoddamnOpuwenijSolver)
 
 include_directories(.)
 
-set(CMAKE_CXX_STANDARD 14)
+if(MSVC)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /std:c++latest")
+endif(MSVC)
+
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 add_executable(GoddamnOpuwenijSolver main.cc
         libCommon/src/CommTest.hh

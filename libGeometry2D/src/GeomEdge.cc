@@ -82,6 +82,7 @@ COMM_UNIT_TEST()
                        e == moth_e2d{{1.0,0.0}, {2.0,0.0}});
 };
 
+#if 0
 COMM_UNIT_TEST()
 {
     moth_e2d e;
@@ -98,3 +99,4 @@ COMM_UNIT_TEST()
     COMM_UNIT_VERIFY_T(moth_e2d::reflect({{2.0,0.0}, {0.0,0.0}}, {{1.0,1.0}, {1.0,0.0}}, e) &&
                        e == moth_e2d{{1.0,1.0}, {1.0,0.0}});
 };
+#endif

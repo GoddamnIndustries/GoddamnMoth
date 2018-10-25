@@ -128,7 +128,7 @@ public:
     /**
      * Reflect trajectory on the diode wall.
      */
-    MOTH_HOST MOTH_DEVICE
+    MOTH_HOST MOTH_DEVICE [[deprecated]]
     static bool reflect(const moth_e2d& e1, const moth_e2d& e2, moth_e2d& e)
     {
         if (intersect(e1, e2, e) && e.s == e.t) {

@@ -14,7 +14,7 @@
 
 #include <stdexcept>
 #include <algorithm>
-#include <iosfwd>
+#include <iostream>
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -27,6 +27,12 @@
 #define MOTH_HOST
 #define MOTH_DEVICE
 #define MOTH_GLOBAL
+#endif
+
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703
+#define MOTH_CPP17 1
+#else
+#define MOTH_CPP17 0
 #endif
 
 #define MOTH_CORE //__declspec(dllexport)
