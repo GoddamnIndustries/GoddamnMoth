@@ -64,7 +64,7 @@ public:
     MOTH_HOST MOTH_DEVICE
     moth_p2d& operator*=(moth_real_t a)
     {
-        return *this = a * *this;
+        return *this = *this * a;
     }
     MOTH_HOST MOTH_DEVICE
     friend moth_p2d operator*(moth_real_t a, const moth_p2d& p1)
