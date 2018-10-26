@@ -169,7 +169,7 @@ public:
         moth_real_t area = 0.0;
         geom_poly2d_iter iter = poly.iter();
         do {
-            area += moth_p2d::det(iter.edge().s, iter.edge().t) * 0.5;
+            area += moth_p2d::det(iter.edge().p1, iter.edge().p2) * 0.5;
         } while ((++iter) != poly.iter());
         return area;
     }
@@ -188,7 +188,7 @@ public:
             moth_e2d e1 = iter.edge();
             moth_e2d e2 = {p, p + geom_p_inf};
             if (moth_e2d::intersect(e1, e2, e)) {
-                if (e.s == e.t) {
+                if (e.p1 == e.p2) {
                     intersections += 1;
                 } else {
                     intersections += 2;
@@ -324,7 +324,7 @@ public:
         for (moth_size_t i = 3; i < p.size(); ++i) {
             moth_p2d p_i = p[i];
             moth_e2d e = hull.iter_rev().edge();
-            while (moth_p2d::det(e.t - p_i, e.s - p_i) >= 0.0) {
+            while (moth_p2d::det(e.p2 - p_i, e.p1 - p_i) >= 0.0) {
                 geom_poly2d::pop(hull);
             }
             geom_poly2d::push(hull, p_i);

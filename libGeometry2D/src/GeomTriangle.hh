@@ -2,35 +2,6 @@
 
 #include "libGeometry2D/src/GeomPoint.hh"
 
-inline void tricircumcenter(const double* a, const double* b, const double* c, double circumcenter[2]) {
-    double xba, yba, xca, yca;
-    double balength, calength;
-    double denominator;
-    double xcirca, ycirca;
-
-    /* Use coordinates relative to point `a' of the triangle. */
-    xba = b[0] - a[0];
-    yba = b[1] - a[1];
-    xca = c[0] - a[0];
-    yca = c[1] - a[1];
-    /* Squares of lengths of the edges incident to `a'. */
-    balength = xba * xba + yba * yba;
-    calength = xca * xca + yca * yca;
-
-    /* Take your chances with floating-point roundoff. */
-    denominator = 0.5 / (xba * yca - yba * xca);
-
-
-    /* Calculate offset (from `a') of circumcenter. */
-    xcirca = (yca * balength - yba * calength) * denominator;
-    ycirca = (xba * calength - xca * balength) * denominator;
-    circumcenter[0] = xcirca;
-    circumcenter[1] = ycirca;
-}
-
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
-
 /**
  * Triangle in 2D space.
  */

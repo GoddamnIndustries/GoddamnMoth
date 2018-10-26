@@ -17,7 +17,7 @@ std::string moth_e2d::str(const moth_e2d& e)
 MOTH_HOST MOTH_CORE
 std::ostream& operator<<(std::ostream& stream, const moth_e2d& e)
 {
-    stream << "(" << e.s << ", " << e.t << ")";
+    stream << "(" << e.p1 << ", " << e.p2 << ")";
     return stream;
 }
 
@@ -41,7 +41,7 @@ std::string moth_e3d::str(const moth_e3d& e)
 MOTH_HOST MOTH_CORE
 std::ostream& operator<<(std::ostream& stream, const moth_e3d& e)
 {
-    stream << "(" << e.s << ", " << e.t << ")";
+    stream << "(" << e.p1 << ", " << e.p2 << ")";
     return stream;
 }
 
@@ -61,13 +61,13 @@ COMM_UNIT_TEST()
     // Intersection of the non-collinear edges.
     COMM_UNIT_VERIFY_F(moth_e2d::intersect({{0.0,5.0}, {2.0,5.0}}, {{2.0, 0.0}, {2.0, 2.0}}, e));
     COMM_UNIT_VERIFY_T(moth_e2d::intersect({{0.0,0.0}, {2.0,2.0}}, {{0.0, 2.0}, {2.0, 0.0}}, e) &&
-                       e.s == moth_p2d{1.0, 1.0} && e.t == e.s);
+                       e.p1 == moth_p2d{1.0, 1.0} && e.p2 == e.p1);
 
     // Intersection of the non-collinear on the ends.
     // ( Note that edge is e is (s, t], not [s, t]. )
     COMM_UNIT_VERIFY_F(moth_e2d::intersect({{0.0,0.0}, {2.0,0.0}}, {{2.0, 0.0}, {2.0, 2.0}}, e));
     COMM_UNIT_VERIFY_T(moth_e2d::intersect({{0.0,0.0}, {2.0,0.0}}, {{2.0, 2.0}, {2.0, 0.0}}, e) &&
-                       e.s == moth_p2d{2.0, 0.0} && e.t == e.s);
+                       e.p1 == moth_p2d{2.0, 0.0} && e.p2 == e.p1);
 
     // Intersection of the collinear edges not on the single line.
     COMM_UNIT_VERIFY_F(moth_e2d::intersect({{0.0,2.0}, {2.0,0.0}}, {{6.0, 2.0}, {4.0, 4.0}}, e));

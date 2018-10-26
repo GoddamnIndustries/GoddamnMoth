@@ -12,14 +12,14 @@ struct MOTH_CORE moth_p2d final
 
 public:
     MOTH_HOST MOTH_DEVICE
-    bool operator==(const moth_p2d& p1) const
+    bool operator==(const moth_p2d& p) const
     {
-        return (x == p1.x) && (y == p1.y);
+        return (x == p.x) && (y == p.y);
     }
     MOTH_HOST MOTH_DEVICE
-    bool operator!=(const moth_p2d& p1) const
+    bool operator!=(const moth_p2d& p) const
     {
-        return (x != p1.x) || (y != p1.y);
+        return (x != p.x) || (y != p.y);
     }
 
 public:
@@ -29,14 +29,14 @@ public:
         return {+x, +y};
     }
     MOTH_HOST MOTH_DEVICE
-    moth_p2d operator+(const moth_p2d& p1) const
+    moth_p2d operator+(const moth_p2d& p) const
     {
-        return {x + p1.x, y + p1.y};
+        return {x + p.x, y + p.y};
     }
     MOTH_HOST MOTH_DEVICE
-    moth_p2d& operator+=(const moth_p2d& p1)
+    moth_p2d& operator+=(const moth_p2d& p)
     {
-        return *this = *this + p1;
+        return *this = *this + p;
     }
 
     MOTH_HOST MOTH_DEVICE
@@ -45,14 +45,14 @@ public:
         return {-x, -y};
     }
     MOTH_HOST MOTH_DEVICE
-    moth_p2d operator-(const moth_p2d& p1) const
+    moth_p2d operator-(const moth_p2d& p) const
     {
-        return {x - p1.x, y - p1.y};
+        return {x - p.x, y - p.y};
     }
     MOTH_HOST MOTH_DEVICE
-    moth_p2d& operator-=(const moth_p2d& p1)
+    moth_p2d& operator-=(const moth_p2d& p)
     {
-        return *this = *this - p1;
+        return *this = *this - p;
     }
 
 public:
@@ -67,9 +67,9 @@ public:
         return *this = *this * a;
     }
     MOTH_HOST MOTH_DEVICE
-    friend moth_p2d operator*(moth_real_t a, const moth_p2d& p1)
+    friend moth_p2d operator*(moth_real_t a, const moth_p2d& p)
     {
-        return p1 * a;
+        return p * a;
     }
 
     MOTH_HOST MOTH_DEVICE
@@ -83,9 +83,9 @@ public:
         return *this = *this / a;
     }
     MOTH_HOST MOTH_DEVICE
-    friend moth_p2d operator/(moth_real_t a, const moth_p2d& p1)
+    friend moth_p2d operator/(moth_real_t a, const moth_p2d& p)
     {
-        return p1 / a;
+        return p / a;
     }
 
 public:
@@ -114,6 +114,21 @@ public:
 
 public:
     MOTH_HOST MOTH_DEVICE
+    static moth_p2d cross(const moth_p2d& p1, const moth_p2d& p2, const moth_p2d& p3)
+    {
+        moth_p2d n{-p3.y, p3.x};
+        moth_real_t l{len(n)};
+        if (l != 0.0) {
+            n /= l;
+            n *= det(p1, p2);
+            return n / l;
+        } else {
+            return {0.0, 0.0};
+        }
+    }
+
+public:
+    MOTH_HOST MOTH_DEVICE
     static moth_real_t det(const moth_p2d& p1, const moth_p2d& p2)
     {
         return p1.x * p2.y - p2.x * p1.y;
@@ -129,30 +144,16 @@ public:
     }
 
     MOTH_HOST MOTH_DEVICE
-    static moth_p2d rotate(const moth_p2d& n, moth_real_t sin, moth_real_t cos)
+    static moth_p2d rotate(const moth_p2d& p, moth_real_t sin, moth_real_t cos)
     {
-        moth_p2d rot{n.x * cos - n.y * sin,
-                     n.x * sin + n.y * cos};
+        moth_p2d rot{p.x * cos - p.y * sin,
+                     p.x * sin + p.y * cos};
         return rot;
     }
     MOTH_HOST MOTH_DEVICE
-    static moth_p2d rotate(const moth_p2d& n, moth_radians_t theta)
+    static moth_p2d rotate(const moth_p2d& p, moth_radians_t theta)
     {
-        return rotate(n, std::sin(theta), std::cos(theta));
-    }
-
-public:
-    MOTH_HOST MOTH_DEVICE [[deprecated]]
-    static moth_p2d normal(const moth_p2d& p1)
-    {
-        moth_p2d n{-p1.y, p1.x};
-        moth_real_t l = len(n);
-        if (l != 0.0) {
-            return n / l;
-        } else {
-            std::cerr << "Warning: normal to null vector." << std::endl;
-            return {0.0, 0.0};
-        }
+        return rotate(p, std::sin(theta), std::cos(theta));
     }
 
 public:
@@ -186,14 +187,14 @@ public:
 
 public:
     MOTH_HOST MOTH_DEVICE
-    bool operator==(const moth_p3d& p1) const
+    bool operator==(const moth_p3d& p) const
     {
-        return (x == p1.x) && (y == p1.y) && (z == p1.z);
+        return (x == p.x) && (y == p.y) && (z == p.z);
     }
     MOTH_HOST MOTH_DEVICE
-    bool operator!=(const moth_p3d& p1) const
+    bool operator!=(const moth_p3d& p) const
     {
-        return (x != p1.x) || (y != p1.y) || (z != p1.z);
+        return (x != p.x) || (y != p.y) || (z != p.z);
     }
 
 public:
@@ -203,14 +204,14 @@ public:
         return {+x, +y, +z};
     }
     MOTH_HOST MOTH_DEVICE
-    moth_p3d operator+(const moth_p3d& p1) const
+    moth_p3d operator+(const moth_p3d& p) const
     {
-        return {x + p1.x, y + p1.y, z + p1.z};
+        return {x + p.x, y + p.y, z + p.z};
     }
     MOTH_HOST MOTH_DEVICE
-    moth_p3d& operator+=(const moth_p3d& p1)
+    moth_p3d& operator+=(const moth_p3d& p)
     {
-        return *this = *this + p1;
+        return *this = *this + p;
     }
 
     MOTH_HOST MOTH_DEVICE
@@ -219,14 +220,14 @@ public:
         return {-x, -y, -z};
     }
     MOTH_HOST MOTH_DEVICE
-    moth_p3d operator-(const moth_p3d& p1) const
+    moth_p3d operator-(const moth_p3d& p) const
     {
-        return {x - p1.x, y - p1.y, z - p1.z};
+        return {x - p.x, y - p.y, z - p.z};
     }
     MOTH_HOST MOTH_DEVICE
-    moth_p3d& operator-=(const moth_p3d& p1)
+    moth_p3d& operator-=(const moth_p3d& p)
     {
-        return *this = *this - p1;
+        return *this = *this - p;
     }
 
 public:
@@ -241,9 +242,9 @@ public:
         return *this = *this * a;
     }
     MOTH_HOST MOTH_DEVICE
-    friend moth_p3d operator*(moth_real_t a, const moth_p3d& p1)
+    friend moth_p3d operator*(moth_real_t a, const moth_p3d& p)
     {
-        return p1 * a;
+        return p * a;
     }
 
     MOTH_HOST MOTH_DEVICE
@@ -257,9 +258,9 @@ public:
         return *this = *this / a;
     }
     MOTH_HOST MOTH_DEVICE
-    friend moth_p3d operator/(moth_real_t a, const moth_p3d& p1)
+    friend moth_p3d operator/(moth_real_t a, const moth_p3d& p)
     {
-        return p1 / a;
+        return p / a;
     }
 
 public:
@@ -298,6 +299,11 @@ public:
                 p1.z * p2.x - p2.z * p1.x,
                 p1.x * p2.y - p2.x * p1.y};
     }
+    MOTH_HOST MOTH_DEVICE
+    static moth_p3d cross(const moth_p3d& p1, const moth_p3d& p2, const moth_p3d& p3)
+    {
+        return cross(cross(p1, p2), p3);
+    }
 
 public:
     MOTH_HOST MOTH_DEVICE
@@ -330,18 +336,18 @@ public:
     }
 
     MOTH_HOST MOTH_DEVICE
-    static moth_p3d rotate(const moth_p3d& n, const moth_p3d& u, moth_real_t sin, moth_real_t cos)
+    static moth_p3d rotate(const moth_p3d& p, const moth_p3d& u, moth_real_t sin, moth_real_t cos)
     {
         moth_real_t ver = 1.0 - cos;
-        moth_p3d rot{n.x * (u.x*u.x * ver + cos) + n.y * (u.x*u.y * ver - u.z*sin) + n.z * (u.x*u.z * ver + u.y*sin),
-                     n.x * (u.y*u.x * ver + u.z*sin) + n.y * (u.y*u.y * ver + cos) + n.z * (u.y*u.z * ver - u.x*sin),
-                     n.x * (u.z*u.x * ver - u.y*sin) + n.y * (u.z*u.y * ver + u.x*sin) + n.z * (u.z*u.z * ver + cos)};
+        moth_p3d rot{p.x * (u.x*u.x * ver + cos) + p.y * (u.x*u.y * ver - u.z*sin) + p.z * (u.x*u.z * ver + u.y*sin),
+                     p.x * (u.y*u.x * ver + u.z*sin) + p.y * (u.y*u.y * ver + cos) + p.z * (u.y*u.z * ver - u.x*sin),
+                     p.x * (u.z*u.x * ver - u.y*sin) + p.y * (u.z*u.y * ver + u.x*sin) + p.z * (u.z*u.z * ver + cos)};
         return rot;
     }
     MOTH_HOST MOTH_DEVICE
-    static moth_p3d rotate(const moth_p3d& n, const moth_p3d& u, moth_radians_t theta)
+    static moth_p3d rotate(const moth_p3d& p, const moth_p3d& u, moth_radians_t theta)
     {
-        return rotate(n, u, std::sin(theta), std::cos(theta));
+        return rotate(p, u, std::sin(theta), std::cos(theta));
     }
 
 public:
@@ -357,5 +363,5 @@ extern std::istream& operator>>(std::istream& stream, moth_p3d& p);
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-static const moth_p3d geom_p_inf{+500000.0, +500000.0, +500000.0};
-static const moth_p3d geom_m_inf{-500000.0, -500000.0, -500000.0};
+extern moth_p3d geom_p_inf;
+extern moth_p3d geom_m_inf;

@@ -144,8 +144,8 @@ static std::vector<moth_cell2d> moth_triangulate_ruppert(std::vector<moth_e2d> E
 {
     std::unordered_set<moth_p2d> Ps{};
     for (const moth_e2d& e : E) {
-        Ps.insert(e.s);
-        Ps.insert(e.t);
+        Ps.insert(e.p1);
+        Ps.insert(e.p2);
     }
     std::vector<moth_p2d> P{Ps.begin(), Ps.end()};
 
