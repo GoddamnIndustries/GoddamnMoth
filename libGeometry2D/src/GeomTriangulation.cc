@@ -1,225 +1,275 @@
 #include "libGeometry2D/src/GeomTriangulation.hh"
 
+#include <unordered_set>
+#include <unordered_map>
+
+#include <vector>
 #include <tuple>
+
 #include <iostream>
+#include <fstream>
 
-/**
- * Delaunay triangulation builder based on Bowyer–Watson algorithm.
- * @see https://en.wikipedia.org/wiki/Bowyer–Watson_algorithm
- */
-struct MOTH_CORE moth_tri_grid2d_bowyer_watson : public moth_tri_grid2d
-{
-    std::vector<moth_tri_cell2d> s_cells;
-public:
-    MOTH_HOST
-    virtual void add_points(std::vector<moth_tri_cell2d>& cells,
-                            std::vector<moth_p2d> p_i) override;
-
-    void add_point(std::vector<moth_tri_cell2d>& tr_cells,
-                   std::vector<moth_p2d>& points,
-                   const moth_p2d& p) const;
-};  // struct moth_tri_grid2d
-
+static const moth_tri2d Sx{{-100, -100}, {+100, -100}, {0, 100}};
 
 MOTH_HOST
-void moth_tri_grid2d_bowyer_watson::add_point(std::vector<moth_tri_cell2d>& tr_cells,
-                                              std::vector<moth_p2d>& points,
-                                              const moth_p2d& p) const
+moth_tri_grid2d_builder::moth_tri_grid2d_builder()
 {
-    points.push_back(p);
-    if (points.size() >= 3) {
-        moth_size_t i = points.size() - 1;
+    /* Create and add points of super cell. */
+    moth_cell2d_tri S{~1u, ~2u, ~3u};
+    tri.push_back(S);
+}
 
-        /* Create and add the super triangle. */
-        moth_tri2d Ts{{-100, -100}, {+100, -100}, {0, 200}};
-        points.reserve(points.size() + 3);
-        points.push_back(Ts.p1);
-        points.push_back(Ts.p2);
-        points.push_back(Ts.p3);
+MOTH_HOST
+moth_tri2d moth_tri_grid2d_builder::triangle(const moth_cell2d_tri& tri_cell,  bool* boundary) const
+{
+    if (boundary != nullptr) {
+        *boundary = false;
+    }
 
-        /* Create and add the super cell. */
-        moth_tri_cell2d Cs{points.size() - 3, points.size() - 2, points.size() - 1};
-        tr_cells.push_back(Cs);
+    moth_tri2d T{};
+    switch (tri_cell.k1) {
+        case ~1u:
+            T.p1 = Sx.p1;
+            if (boundary != nullptr) {
+                *boundary = true;
+            }
+            break;
+        case ~2u:
+            T.p1 = Sx.p2;
+            if (boundary != nullptr) {
+                *boundary = true;
+            }
+            break;
+        case ~3u:
+            T.p1 = Sx.p3;
+            if (boundary != nullptr) {
+                *boundary = true;
+            }
+            break;
+        default:
+            T.p1 = tri_points[tri_cell.k1];
+            break;
+    }
+    switch (tri_cell.k2) {
+        case ~1u:
+            T.p2 = Sx.p1;
+            if (boundary != nullptr) {
+                *boundary = true;
+            }
+            break;
+        case ~2u:
+            T.p2 = Sx.p2;
+            if (boundary != nullptr) {
+                *boundary = true;
+            }
+            break;
+        case ~3u:
+            T.p2 = Sx.p3;
+            if (boundary != nullptr) {
+                *boundary = true;
+            }
+            break;
+        default:
+            T.p2 = tri_points[tri_cell.k2];
+            break;
+    }
+    switch (tri_cell.k3) {
+        case ~1u:
+            T.p3 = Sx.p1;
+            if (boundary != nullptr) {
+                *boundary = true;
+            }
+            break;
+        case ~2u:
+            T.p3 = Sx.p2;
+            if (boundary != nullptr) {
+                *boundary = true;
+            }
+            break;
+        case ~3u:
+            T.p3 = Sx.p3;
+            if (boundary != nullptr) {
+                *boundary = true;
+            }
+            break;
+        default:
+            T.p3 = tri_points[tri_cell.k3];
+            break;
+    }
+    return T;
+}
+MOTH_HOST
+bool moth_tri_grid2d_builder::_triangle(moth_tri2d& tr, const moth_cell2d_tri& cell) const
+{
+    bool boundary;
+    tr = triangle(cell, &boundary);
+    return !boundary;
+}
 
-        /* Find bad triangles and create polygon of them. */
-        std::vector<bool> tr_cells_bad(tr_cells.size());
-        std::vector<std::tuple<moth_size_t, moth_size_t>> tr_poly;
-        for (moth_size_t k = 0; k < tr_cells.size(); ++k) {
-            const moth_tri_cell2d& C = tr_cells[k];
-            if (tr_cells_bad[k] = moth_tri2d::circle({points[C.p1], points[C.p2], points[C.p3]}, p)) {
-                tr_poly.emplace_back(C.p1, C.p2);
-                tr_poly.emplace_back(C.p2, C.p3);
-                tr_poly.emplace_back(C.p3, C.p1);
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
+MOTH_HOST
+void moth_tri_grid2d_builder::insert(const moth_p2d& p)
+{
+    /* Insert new point to the end. */
+    moth_size_t i = tri_points.size();
+    tri_points.push_back(p);
+
+    /* Find bad triangles. */
+    std::vector<moth_cell2d_edge> tr_bad_poly;
+    for (moth_cell2d_tri& tri_cell : tri) {
+        tri_cell.bad = moth_tri2d::circle(triangle(tri_cell), p);
+        if (tri_cell.bad) {
+            tr_bad_poly.push_back({tri_cell.k1, tri_cell.k2});
+            tr_bad_poly.push_back({tri_cell.k2, tri_cell.k3});
+            tr_bad_poly.push_back({tri_cell.k3, tri_cell.k1});
+        }
+    }
+    /* Remove bad triangles. */
+    tri.erase(std::remove_if(
+              tri.begin(), tri.end(), [](const auto& tri_cell){ return tri_cell.bad; }),
+              tri.end());
+
+    /* Find shared edges of the polygon triangulation. */
+    for (moth_size_t k = 0; k < tr_bad_poly.size(); ++k) {
+        for (moth_size_t m = k + 1; m < tr_bad_poly.size(); ++m) {
+            moth_cell2d_edge& e1 = tr_bad_poly[k];
+            moth_cell2d_edge& e2 = tr_bad_poly[m];
+            if (e1 == e2) {
+                e1.bad = true;
+                e2.bad = true;
             }
         }
-        /* Remove bad triangles. */
-        std::vector<moth_tri_cell2d> tr_cells1;
-        for (moth_size_t k = 0; k < tr_cells.size(); ++k) {
-            if (!tr_cells_bad[k]) {
-                tr_cells1.push_back(tr_cells[k]);
-            }
-        }
-        tr_cells = std::move(tr_cells1);
+    }
+    /* Remove shared edges. */
+    tr_bad_poly.erase(std::remove_if(
+                      tr_bad_poly.begin(), tr_bad_poly.end(), [](const moth_cell2d_edge& e) { return e.bad; }),
+                      tr_bad_poly.end());
 
-        /* Find shared edges of the polygon triangulation. */
-        std::vector<bool> tr_poly_shared(tr_poly.size());
-        for (moth_size_t k = 0; k < tr_poly.size(); ++k) {
-            for (moth_size_t m = k + 1; m < tr_poly.size(); ++m) {
-                const std::tuple<moth_size_t, moth_size_t>& e1 = tr_poly[k];
-                const std::tuple<moth_size_t, moth_size_t>& e2 = tr_poly[m];
-                if (e1 == e2 ||
-                    e1 == std::make_tuple(std::get<1>(e2), std::get<0>(e2))) {
-                    tr_poly_shared[k] = true;
-                    tr_poly_shared[m] = true;
-                }
-            }
-        }
-        /* Remove shared edges. */
-        std::vector<std::tuple<moth_size_t, moth_size_t>> tr_poly1;
-        for (moth_size_t k = 0; k < tr_poly.size(); ++k) {
-            if (!tr_poly_shared[k]) {
-                tr_poly1.push_back(tr_poly[k]);
-            }
-        }
-        tr_poly = std::move(tr_poly1);
+    /* Add new triangles. */
+    for (const auto& e : tr_bad_poly) {
+        moth_cell2d_tri C{e.k1, e.k2, i};
+        moth_tri2d T{triangle(C)};
 
-        /* Add new triangles. */
-        for (const std::tuple<moth_size_t, moth_size_t>& e : tr_poly) {
-            moth_tri_cell2d C{std::get<0>(e), std::get<1>(e), i};
-            moth_tri2d T{points[C.p1], points[C.p2], points[C.p3]};
-            switch (fsgn(moth_tri2d::area(T))) {
-                case +1:
-                    /* Nonsingular CCW triangle. */
-                    tr_cells.push_back(C);
-                    break;
-                case -1:
-                    /* Nonsingular CW triangle, reorder to CCW. */
-                    std::swap(C.p1, C.p2);
-                    tr_cells.push_back(C);
-                    break;
-                default:
-                    /* Singular triangle. */
-                    std::cerr << "Singular triangle" << std::endl;
-                    std::abort();
-            }
+        /* Make sure that the triangle is CCW. */
+        if (moth_tri2d::area(T) < 0.0) {
+            std::swap(C.k1, C.k2);
         }
-
-        /* Remove the super triangle. */
-        std::vector<moth_tri_cell2d> tr_cells2;
-        for (const moth_tri_cell2d& C : tr_cells) {
-            if (C.p1 != Cs.p1 && C.p1 != Cs.p2 && C.p1 != Cs.p3 &&
-                C.p2 != Cs.p1 && C.p2 != Cs.p2 && C.p2 != Cs.p3 &&
-                C.p3 != Cs.p1 && C.p3 != Cs.p2 && C.p3 != Cs.p3) {
-                tr_cells2.push_back(C);
-            }
-        }
-        tr_cells = std::move(tr_cells2);
-
-        /* Remove the vertices of super cell. */
-        points.pop_back();
-        points.pop_back();
-        points.pop_back();
+        tri.push_back(C);
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/**
+ * @see https://en.wikipedia.org/wiki/Ruppert%27s_algorithm
+ * @see https://people.eecs.berkeley.edu/~jrs/papers/2dj.pdf
+ */
 MOTH_HOST
-void moth_tri_grid2d_bowyer_watson::add_points(std::vector<moth_tri_cell2d>& tr,
-                                               std::vector<moth_p2d> P)
+void moth_tri_grid2d_builder::refine()
 {
-    /* Create and add the super triangle. */
-    moth_tri2d Ts{{-100, -100}, {+100, -100}, {0, 200}};
-    P.push_back(Ts.p1);
-    P.push_back(Ts.p2);
-    P.push_back(Ts.p3);
+    std::unordered_set<moth_size_t> tri_bad_edges;
+    std::unordered_set<moth_size_t> tri_bad_triangles;
+    for (moth_size_t n = 0; n < 20; ++n) {
+        std::cerr << n << " " << tri.size() << std::endl;
 
-    /* Create and add the super cell. */
-    moth_tri_cell2d Cs{P.size() - 3, P.size() - 2, P.size() - 1};
-    tr.push_back(Cs);
+        /* Phase 1: Fix all encroached edges. */
+        while (true) {
+            for (moth_size_t m = 0; m < tri_edges.size(); ++m) {
+                const moth_e2d& e = tri_edges[m];
 
-    for (moth_size_t i = 0; i < P.size() - 3; ++i) {
-        const moth_p2d& p = P[i];
+                /* Find if this edge is encroached by any point. */
+                moth_p2d c = 0.5 * (e.p1 + e.p2);
+                moth_real_t r = 0.5 * moth_p2d::len(e.vec());
+                for (const moth_p2d& p : tri_points) {
+                    if (p != e.p1 && p != e.p2 &&
+                        moth_p2d::len(p - c) < r) {
+                        tri_bad_edges.insert(m);
+                        break;
+                    }
+                }
+            }
+            if (!tri_bad_edges.empty()) {
+                tri_edges.reserve(tri_edges.capacity() + tri_bad_edges.size());
+                for (moth_size_t m : tri_bad_edges) {
+                    moth_e2d& e = tri_edges[m];
 
-        /* Find bad triangles and create polygon of them. */
-        std::vector<bool> tr_bad(tr.size());
-        std::vector<std::tuple<moth_size_t, moth_size_t>> tr_bad_poly;
-        for (moth_size_t k = 0; k < tr.size(); ++k) {
-            const moth_tri_cell2d& C = tr[k];
-            if (tr_bad[k] = moth_tri2d::circle({P[C.p1], P[C.p2], P[C.p3]}, p)) {
-                tr_bad_poly.emplace_back(C.p1, C.p2);
-                tr_bad_poly.emplace_back(C.p2, C.p3);
-                tr_bad_poly.emplace_back(C.p3, C.p1);
+                    /* Calculate center point and add it to triangulation. */
+                    moth_p2d c = 0.5 * (e.p1 + e.p2);
+                    insert(c);
+
+                    moth_p2d p = e.p2;
+                    e.p2 = c;
+                    tri_edges.push_back({c, p});
+                }
+                tri_bad_edges.clear();
+            } else {
+                break;
             }
         }
-        /* Remove bad triangles. */
-        std::vector<moth_tri_cell2d> tr1;
-        for (moth_size_t k = 0; k < tr.size(); ++k) {
-            if (!tr_bad[k]) {
-                tr1.push_back(tr[k]);
-            }
-        }
-        tr = std::move(tr1);
 
-        /* Find shared edges of the polygon triangulation. */
-        std::vector<bool> tr_bad_poly_shared(tr_bad_poly.size());
-        for (moth_size_t k = 0; k < tr_bad_poly.size(); ++k) {
-            for (moth_size_t m = k + 1; m < tr_bad_poly.size(); ++m) {
-                const std::tuple<moth_size_t, moth_size_t>& e1 = tr_bad_poly[k];
-                const std::tuple<moth_size_t, moth_size_t>& e2 = tr_bad_poly[m];
-                if (e1 == e2 ||
-                    e1 == std::make_tuple(std::get<1>(e2), std::get<0>(e2))) {
-                    tr_bad_poly_shared[k] = true;
-                    tr_bad_poly_shared[m] = true;
+        /* Phase 2: Fix all bad triangles. */
+        for (moth_size_t k = 0; k < tri.size(); ++k) {
+            const moth_cell2d_tri& C = tri[k];
+            moth_tri2d T{};
+            if (_triangle(T, C)) {
+                /* Assume all triangles are poor. */
+                moth_e2d e12 = T.edge(12);
+                moth_e2d e23 = T.edge(23);
+                moth_e2d e31 = T.edge(31);
+                moth_real_t theta1{std::fabs(moth_e2d::angle(e31, e12)) * 180.0 / MOTH_PI};
+                moth_real_t theta2{std::fabs(moth_e2d::angle(e12, e23)) * 180.0 / MOTH_PI};
+                moth_real_t theta3{std::fabs(moth_e2d::angle(e23, e31)) * 180.0 / MOTH_PI};
+                moth_real_t theta{std::min(theta1, std::min(theta2, theta3)) / 2};
+                if (theta < 35.0) {
+                    tri_bad_triangles.insert(k);
                 }
             }
         }
-        /* Remove shared edges. */
-        std::vector<std::tuple<moth_size_t, moth_size_t>> tr_bad_poly1;
-        for (moth_size_t k = 0; k < tr_bad_poly.size(); ++k) {
-            if (!tr_bad_poly_shared[k]) {
-                tr_bad_poly1.push_back(tr_bad_poly[k]);
+        if (!tri_bad_triangles.empty()) {
+            for (moth_size_t k : tri_bad_triangles) {
+                const moth_cell2d_tri& C = tri[k];
+                moth_tri2d T{};
+                if (_triangle(T, C)) {
+                    bool cc_bad = false;
+                    moth_p2d cc{moth_tri2d::circumcenter(T)};
+                    for (moth_size_t m = 0; m < tri_edges.size(); ++m) {
+                        const moth_e2d& e = tri_edges[m];
+
+                        /* Find if this edge is encroached by the circumcenter. */
+                        moth_p2d c = 0.5 * (e.p1 + e.p2);
+                        moth_real_t r = 0.5 * moth_p2d::len(e.vec());
+                        if (moth_p2d::len(cc - c) < r) {
+                            tri_bad_edges.insert(m);
+                            cc_bad = true;
+                            break;
+                        }
+                    }
+                    if (!cc_bad) {
+                        insert(cc);
+                    }
+                }
             }
-        }
-        tr_bad_poly = std::move(tr_bad_poly1);
-
-        /* Add new triangles. */
-        for (const std::tuple<moth_size_t, moth_size_t>& e : tr_bad_poly) {
-            moth_tri_cell2d C{std::get<0>(e), std::get<1>(e), i};
-
-            /* Make sure that the triangle is CCW. */
-            moth_tri2d T{P[C.p1], P[C.p2], P[C.p3]};
-            if (moth_tri2d::area(T) < 0.0) {
-                std::swap(C.p1, C.p2);
-            }
-
-            tr.push_back(C);
+            tri_bad_triangles.clear();
         }
     }
+}
 
-    /* Remove the super triangle. */
-    std::vector<moth_tri_cell2d> tr1;
-    for (const moth_tri_cell2d& C : tr) {
-        if (C.p1 != Cs.p1 && C.p1 != Cs.p2 && C.p1 != Cs.p3 &&
-            C.p2 != Cs.p1 && C.p2 != Cs.p2 && C.p2 != Cs.p3 &&
-            C.p3 != Cs.p1 && C.p3 != Cs.p2 && C.p3 != Cs.p3) {
-            tr1.push_back(C);
+MOTH_HOST
+void moth_tri_grid2d_builder::print()
+{
+    std::string TrFilePath("res/tr-" + std::to_string(99999) + ".txt");
+    std::ofstream TrFile(TrFilePath);
+
+    for (moth_size_t k = 0; k < tri.size(); ++k) {
+        bool super_boundary;
+        const moth_cell2d_tri& C = tri[k];
+        moth_tri2d T{triangle(C, &super_boundary)};
+        if (!super_boundary) {
+            TrFile << T.p1 << std::endl
+                   << T.p2 << std::endl
+                   << T.p3 << std::endl
+                   << T.p1 << std::endl
+                   << std::endl;
         }
     }
-    tr = std::move(tr1);
 }

@@ -138,9 +138,10 @@ public:
     MOTH_HOST MOTH_DEVICE
     static moth_radians_t angle(const moth_p2d& p1, const moth_p2d& p2)
     {
-        moth_real_t sin{det(p1, p2)};
-        moth_real_t cos{dot(p1, p2)};
-        return std::atan2(sin, cos);
+        //moth_real_t sin{det(p1, p2)};
+        moth_real_t cos{dot(p1, p2) / len(p1) / len(p2)};
+        return std::acos(cos);
+        //return std::atan2(sin, cos);
     }
 
     MOTH_HOST MOTH_DEVICE
@@ -165,6 +166,20 @@ MOTH_HOST MOTH_CORE
 extern std::ostream& operator<<(std::ostream& stream, const moth_p2d& p);
 MOTH_HOST MOTH_CORE
 extern std::istream& operator>>(std::istream& stream, moth_p2d& p);
+
+namespace std {
+    template<>
+    struct hash<moth_p2d>
+    {
+        using result_type = size_t;
+        using argument_type = moth_p2d;
+        result_type operator()(const argument_type& p) const noexcept
+        {
+            return hash<moth_real_t>()(p.x) ^
+                   hash<moth_real_t>()(p.y);
+        }
+    };  // struct hash<moth_p2d>
+}   // namespace std
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -339,9 +354,10 @@ public:
     static moth_p3d rotate(const moth_p3d& p, const moth_p3d& u, moth_real_t sin, moth_real_t cos)
     {
         moth_real_t ver = 1.0 - cos;
-        moth_p3d rot{p.x * (u.x*u.x * ver + cos) + p.y * (u.x*u.y * ver - u.z*sin) + p.z * (u.x*u.z * ver + u.y*sin),
-                     p.x * (u.y*u.x * ver + u.z*sin) + p.y * (u.y*u.y * ver + cos) + p.z * (u.y*u.z * ver - u.x*sin),
-                     p.x * (u.z*u.x * ver - u.y*sin) + p.y * (u.z*u.y * ver + u.x*sin) + p.z * (u.z*u.z * ver + cos)};
+        moth_p3d a{u.x*u.x * ver + cos, u.x*u.y * ver - u.z*sin, u.x*u.z * ver + u.y*sin};
+        moth_p3d b{u.y*u.x * ver + u.z*sin, u.y*u.y * ver + cos, u.y*u.z * ver - u.x*sin};
+        moth_p3d c{u.z*u.x * ver - u.y*sin, u.z*u.y * ver + u.x*sin, u.z*u.z * ver + cos};
+        moth_p3d rot{dot(a, p), dot(b, p), dot(c, p)};
         return rot;
     }
     MOTH_HOST MOTH_DEVICE
@@ -359,6 +375,21 @@ MOTH_HOST MOTH_CORE
 extern std::ostream& operator<<(std::ostream& stream, const moth_p3d& p);
 MOTH_HOST MOTH_CORE
 extern std::istream& operator>>(std::istream& stream, moth_p3d& p);
+
+namespace std {
+    template<>
+    struct hash<moth_p3d>
+    {
+        using result_type = size_t;
+        using argument_type = moth_p3d;
+        result_type operator()(const argument_type& p) const noexcept
+        {
+            return hash<moth_real_t>()(p.x) ^
+                   hash<moth_real_t>()(p.y) ^
+                   hash<moth_real_t>()(p.z);
+        }
+    };  // struct hash<moth_p2d>
+}   // namespace std
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //

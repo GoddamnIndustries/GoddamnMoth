@@ -1,15 +1,32 @@
 #pragma once
 
 #include "libGeometry2D/src/GeomPoint.hh"
+#include "libGeometry2D/src/GeomEdge.hh"
 
 /**
  * Triangle in 2D space.
  */
-struct MOTH_CORE moth_tri2d
+struct MOTH_CORE moth_tri2d final
 {
     moth_p2d p1{};
     moth_p2d p2{};
     moth_p2d p3{};
+
+public:
+    MOTH_HOST MOTH_DEVICE
+    moth_e2d edge(moth_size_t k) const
+    {
+        switch (k) {
+            case 12:
+                return {p1, p2};
+            case 23:
+                return {p2, p3};
+            case 31:
+                return {p3, p1};
+            default:
+                std::abort();
+        }
+    }
 
 public:
     MOTH_HOST MOTH_DEVICE
@@ -62,7 +79,7 @@ public:
 /**
  * Triangle in 3D space.
  */
-struct MOTH_CORE moth_tri3d
+struct MOTH_CORE moth_tri3d final
 {
     moth_p3d p1{};
     moth_p3d p2{};

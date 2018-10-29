@@ -1,6 +1,7 @@
 
 #include "libGeometry2D/src/GeomTetrahedron.hh"
 #include "libGeometry2D/src/GeomDelaunay.hh"
+#include "libGeometry2D/src/GeomTriangulation.hh"
 
 moth_real_t f(const moth_p3d& x)
 {
@@ -32,9 +33,49 @@ moth_p3d moth_grad(const moth_tetrahedron& T, moth_real_t f1, moth_real_t f2,
     return grad;
 }
 
+#include <ctime>
+#include <random>
+
 int main()
 {
 #if 1
+    std::default_random_engine random_engine;
+    std::uniform_real_distribution<moth_real_t> uniform_distribution(0.0, 1.0);
+
+    moth_tri_grid2d_builder builder;
+
+    auto c = clock();
+    for (moth_size_t k = 0; k < 10000; ++k) {
+        moth_p2d p{uniform_distribution(random_engine),
+                   uniform_distribution(random_engine)};
+        builder.insert(p);
+    }
+    c = clock() - c;
+    std::cerr << moth_real_t(c) / CLOCKS_PER_SEC << std::endl;
+#endif
+
+#if 0
+    moth_tri_grid2d_builder builder;
+    std::vector<moth_p2d> P;
+    for (moth_size_t i = 0; i < 40; ++i) {
+        moth_real_t r = 5.0;
+        moth_real_t phi = 2.0 * i / 40.0 * MOTH_PI;
+        moth_real_t x = r * cos(phi);
+        moth_real_t y = r * sin(phi) + x;
+        builder.insert({x, y});
+        P.push_back({x , y});
+    }
+    std::vector<moth_e2d> E;
+    for (moth_size_t i = 0; i < P.size() - 1; ++i) {
+        E.push_back({P[i], P[i + 1]});
+    }
+    E.push_back({P.back(), P.front()});
+    builder.tri_edges = E;
+    builder.refine();
+    builder.print();
+#endif
+
+#if 0
     std::vector<moth_p2d> P;
     /*for (moth_size_t i = 1; i <= 5; ++i) {
         moth_real_t r = i / 5.0;
@@ -53,8 +94,9 @@ int main()
         P.push_back({x , y});
     }
     //P.push_back({0,0});
-#endif
+    //moth_triangulate_bowyer_watson(P);
 
+#if 0
     std::vector<moth_e2d> E;
     for (moth_size_t i = 0; i < P.size() - 1; ++i) {
         E.push_back({P[i], P[i + 1]});
@@ -62,6 +104,8 @@ int main()
     E.push_back({P.back(), P.front()});
 
     moth_triangulate_ruppert(E);
+#endif
+#endif
 
     moth_tetrahedron T{
         {0.001, 0.0013, 0.001}, {-0.001, -0.001, 0.001}, {-0.001, 0.001, -0.0017}, {0.001, -0.0016, -0.001}

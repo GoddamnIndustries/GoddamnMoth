@@ -12,6 +12,7 @@
 #include <cassert>
 #include <cmath>
 
+#include <functional>
 #include <stdexcept>
 #include <algorithm>
 #include <iostream>

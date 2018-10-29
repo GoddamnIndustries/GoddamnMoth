@@ -32,29 +32,6 @@ public:
 
 public:
     MOTH_HOST MOTH_DEVICE
-    moth_e2d operator+(const moth_p2d& p) const
-    {
-        return {p1 + p, p2 + p};
-    }
-    MOTH_HOST MOTH_DEVICE
-    moth_e2d& operator+=(const moth_p2d& p)
-    {
-        return *this = *this + p;
-    }
-
-    MOTH_HOST MOTH_DEVICE
-    moth_e2d operator-(const moth_p2d& p) const
-    {
-        return {p1 - p, p2 - p};
-    }
-    MOTH_HOST MOTH_DEVICE
-    moth_e2d& operator-=(const moth_p2d& p)
-    {
-        return *this = *this - p;
-    }
-
-public:
-    MOTH_HOST MOTH_DEVICE
     static moth_real_t dot(const moth_e2d& e1, const moth_e2d& e2)
     {
         moth_p2d p1{e1.vec()};
@@ -94,22 +71,6 @@ public:
         moth_p2d p1{e1.vec()};
         moth_p2d p2{e2.vec()};
         return moth_p2d::angle(p1, p2);
-    }
-
-    MOTH_HOST MOTH_DEVICE
-    static moth_e2d rotate(const moth_e2d& e, const moth_p2d& p, moth_real_t sin, moth_real_t cos)
-    {
-        moth_p2d p1 = e.p1 - p;
-        moth_p2d p2 = e.p2 - p;
-        moth_e2d rot{moth_p2d::rotate(p1, sin, cos),
-                     moth_p2d::rotate(p2, sin, cos)};
-        rot += p;
-        return rot;
-    }
-    MOTH_HOST MOTH_DEVICE
-    static moth_e2d rotate(const moth_e2d& e, const moth_p2d& p, moth_radians_t theta)
-    {
-        return rotate(e, p, std::sin(theta), std::cos(theta));
     }
 
 public:
@@ -299,22 +260,6 @@ public:
         moth_p3d p1{e1.vec()};
         moth_p3d p2{e2.vec()};
         return moth_p3d::angle(p1, p2);
-    }
-
-    MOTH_HOST MOTH_DEVICE
-    static moth_e3d rotate(const moth_e3d& e, const moth_p3d& p, const moth_p3d& u, moth_real_t sin, moth_real_t cos)
-    {
-        moth_p3d p1 = e.p1 - p;
-        moth_p3d p2 = e.p2 - p;
-        moth_e3d rot{moth_p3d::rotate(p1, u, sin, cos),
-                     moth_p3d::rotate(p2, u, sin, cos)};
-        rot += p;
-        return rot;
-    }
-    MOTH_HOST MOTH_DEVICE
-    static moth_e3d rotate(const moth_e3d& e, const moth_p3d& p, const moth_p3d& u, moth_radians_t theta)
-    {
-        return rotate(e, p, u, std::sin(theta), std::cos(theta));
     }
 
 public:

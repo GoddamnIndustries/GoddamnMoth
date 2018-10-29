@@ -13,19 +13,6 @@
 #include <algorithm>
 #include <unordered_set>
 
-namespace std {
-    template<>
-    struct hash<moth_p2d>
-    {
-    public:
-        std::size_t operator()(const moth_p2d& p1) const
-        {
-            return std::hash<moth_real_t>()(p1.x) ^
-                   std::hash<moth_real_t>()(p1.y);
-        }
-    };  // struct hash<moth_p2d>
-}
-
 struct MOTH_CORE moth_cell2d
 {
     moth_size_t p1{MOTH_NPOS}, p2{MOTH_NPOS}, p3{MOTH_NPOS};
@@ -109,6 +96,7 @@ static std::vector<moth_cell2d> moth_triangulate_bowyer_watson(std::vector<moth_
     }
 
     /* Remove the super triangle. */
+#if 0
     std::vector<moth_cell2d> tr1;
     for (const moth_cell2d& C : tr) {
         if (C.p1 != S.p1 && C.p1 != S.p2 && C.p1 != S.p3 &&
@@ -118,8 +106,9 @@ static std::vector<moth_cell2d> moth_triangulate_bowyer_watson(std::vector<moth_
         }
     }
     tr = std::move(tr1);
+#endif
 
-#if 0
+#if 1
     std::string TrFilePath("res/tr-" + std::to_string(99999) + ".txt");
     std::ofstream TrFile(TrFilePath);
     for (const moth_cell2d& T : tr) {
