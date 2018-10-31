@@ -5,7 +5,7 @@
 /**
  * Point in 2D space.
  */
-struct MOTH_CORE moth_p2d final
+struct MOTH_CORE moth_p2d
 {
     moth_real_t x{};
     moth_real_t y{};

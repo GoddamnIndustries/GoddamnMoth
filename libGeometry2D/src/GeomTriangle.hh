@@ -6,7 +6,7 @@
 /**
  * Triangle in 2D space.
  */
-struct MOTH_CORE moth_tri2d final
+struct MOTH_CORE moth_triangle2d final
 {
     moth_p2d p1{};
     moth_p2d p2{};
@@ -30,7 +30,7 @@ public:
 
 public:
     MOTH_HOST MOTH_DEVICE
-    static moth_p2d circumcenter(const moth_tri2d& t1)
+    static moth_p2d circumcenter(const moth_triangle2d& t1)
     {
         moth_p3d a = {t1.p1.x, t1.p1.y}, b = {t1.p2.x,t1.p2.y}, c = {t1.p3.x,t1.p3.y};
         moth_p3d ac = c - a;
@@ -44,7 +44,7 @@ public:
 
 public:
     MOTH_HOST MOTH_DEVICE
-    static bool circle(const moth_tri2d& t1, const moth_p2d& p1)
+    static bool circle(const moth_triangle2d& t1, const moth_p2d& p1)
     {
         moth_real_t a13 = (t1.p1.x*t1.p1.x - p1.x*p1.x) + (t1.p1.y*t1.p1.y - p1.y*p1.y);
         moth_real_t a23 = (t1.p2.x*t1.p2.x - p1.x*p1.x) + (t1.p2.y*t1.p2.y - p1.y*p1.y);
@@ -57,7 +57,7 @@ public:
 
 public:
     MOTH_HOST MOTH_DEVICE
-    static moth_real_t len(const moth_tri2d& t1)
+    static moth_real_t len(const moth_triangle2d& t1)
     {
         moth_real_t l{};
         l += moth_p2d::len(t1.p1 - t1.p2);
@@ -66,12 +66,12 @@ public:
         return l;
     }
     MOTH_HOST MOTH_DEVICE
-    static moth_real_t area(const moth_tri2d& t1)
+    static moth_real_t area(const moth_triangle2d& t1)
     {
         moth_real_t n{moth_p2d::det(t1.p2 - t1.p1, t1.p3 - t1.p1)};
         return 0.5 * n;
     }
-};  // struct moth_tri2d
+};  // struct moth_triangle2d
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //

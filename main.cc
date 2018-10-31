@@ -2,6 +2,7 @@
 #include "libGeometry2D/src/GeomTetrahedron.hh"
 #include "libGeometry2D/src/GeomDelaunay.hh"
 #include "libGeometry2D/src/GeomTriangulation.hh"
+#include "libGeometry2D/src/GeomMesh.hh"
 
 moth_real_t f(const moth_p3d& x)
 {
@@ -39,19 +40,20 @@ moth_p3d moth_grad(const moth_tetrahedron& T, moth_real_t f1, moth_real_t f2,
 int main()
 {
 #if 1
-    std::default_random_engine random_engine;
-    std::uniform_real_distribution<moth_real_t> uniform_distribution(0.0, 1.0);
+    std::default_random_engine random_engine(228);
+    std::uniform_real_distribution<moth_real_t> uniform_distribution(-1.0, 1.0);
 
-    moth_tri_grid2d_builder builder;
+    moth_mesh2d builder;
 
     auto c = clock();
-    for (moth_size_t k = 0; k < 10000; ++k) {
+    for (moth_size_t k = 0; k < 3; ++k) {
         moth_p2d p{uniform_distribution(random_engine),
                    uniform_distribution(random_engine)};
         builder.insert(p);
     }
     c = clock() - c;
     std::cerr << moth_real_t(c) / CLOCKS_PER_SEC << std::endl;
+    builder.print();
 #endif
 
 #if 0

@@ -9,7 +9,7 @@
 #include <iostream>
 #include <fstream>
 
-static const moth_tri2d Sx{{-100, -100}, {+100, -100}, {0, 100}};
+static const moth_triangle2d Sx{{-100, -100}, {+100, -100}, {0, 100}};
 
 MOTH_HOST
 moth_tri_grid2d_builder::moth_tri_grid2d_builder()
@@ -20,13 +20,13 @@ moth_tri_grid2d_builder::moth_tri_grid2d_builder()
 }
 
 MOTH_HOST
-moth_tri2d moth_tri_grid2d_builder::triangle(const moth_cell2d_tri& tri_cell,  bool* boundary) const
+moth_triangle2d moth_tri_grid2d_builder::triangle(const moth_cell2d_tri& tri_cell,  bool* boundary) const
 {
     if (boundary != nullptr) {
         *boundary = false;
     }
 
-    moth_tri2d T{};
+    moth_triangle2d T{};
     switch (tri_cell.k1) {
         case ~1u:
             T.p1 = Sx.p1;
@@ -99,7 +99,7 @@ moth_tri2d moth_tri_grid2d_builder::triangle(const moth_cell2d_tri& tri_cell,  b
     return T;
 }
 MOTH_HOST
-bool moth_tri_grid2d_builder::_triangle(moth_tri2d& tr, const moth_cell2d_tri& cell) const
+bool moth_tri_grid2d_builder::_triangle(moth_triangle2d& tr, const moth_cell2d_tri& cell) const
 {
     bool boundary;
     tr = triangle(cell, &boundary);
@@ -119,7 +119,7 @@ void moth_tri_grid2d_builder::insert(const moth_p2d& p)
     /* Find bad triangles. */
     std::vector<moth_cell2d_edge> tr_bad_poly;
     for (moth_cell2d_tri& tri_cell : tri) {
-        tri_cell.bad = moth_tri2d::circle(triangle(tri_cell), p);
+        tri_cell.bad = moth_triangle2d::circle(triangle(tri_cell), p);
         if (tri_cell.bad) {
             tr_bad_poly.push_back({tri_cell.k1, tri_cell.k2});
             tr_bad_poly.push_back({tri_cell.k2, tri_cell.k3});
@@ -150,10 +150,10 @@ void moth_tri_grid2d_builder::insert(const moth_p2d& p)
     /* Add new triangles. */
     for (const auto& e : tr_bad_poly) {
         moth_cell2d_tri C{e.k1, e.k2, i};
-        moth_tri2d T{triangle(C)};
+        moth_triangle2d T{triangle(C)};
 
         /* Make sure that the triangle is CCW. */
-        if (moth_tri2d::area(T) < 0.0) {
+        if (moth_triangle2d::area(T) < 0.0) {
             std::swap(C.k1, C.k2);
         }
         tri.push_back(C);
@@ -210,7 +210,7 @@ void moth_tri_grid2d_builder::refine()
         /* Phase 2: Fix all bad triangles. */
         for (moth_size_t k = 0; k < tri.size(); ++k) {
             const moth_cell2d_tri& C = tri[k];
-            moth_tri2d T{};
+            moth_triangle2d T{};
             if (_triangle(T, C)) {
                 /* Assume all triangles are poor. */
                 moth_e2d e12 = T.edge(12);
@@ -228,10 +228,10 @@ void moth_tri_grid2d_builder::refine()
         if (!tri_bad_triangles.empty()) {
             for (moth_size_t k : tri_bad_triangles) {
                 const moth_cell2d_tri& C = tri[k];
-                moth_tri2d T{};
+                moth_triangle2d T{};
                 if (_triangle(T, C)) {
                     bool cc_bad = false;
-                    moth_p2d cc{moth_tri2d::circumcenter(T)};
+                    moth_p2d cc{moth_triangle2d::circumcenter(T)};
                     for (moth_size_t m = 0; m < tri_edges.size(); ++m) {
                         const moth_e2d& e = tri_edges[m];
 
@@ -263,7 +263,7 @@ void moth_tri_grid2d_builder::print()
     for (moth_size_t k = 0; k < tri.size(); ++k) {
         bool super_boundary;
         const moth_cell2d_tri& C = tri[k];
-        moth_tri2d T{triangle(C, &super_boundary)};
+        moth_triangle2d T{triangle(C, &super_boundary)};
         if (!super_boundary) {
             TrFile << T.p1 << std::endl
                    << T.p2 << std::endl

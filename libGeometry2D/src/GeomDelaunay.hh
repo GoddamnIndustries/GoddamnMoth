@@ -29,7 +29,7 @@ static std::vector<moth_cell2d> moth_triangulate_bowyer_watson(std::vector<moth_
     std::vector<moth_cell2d> tr{};
 
     /* Add the super */
-    moth_tri2d Sx{{-100, -100}, {+100, -100}, {0, 200}};
+    moth_triangle2d Sx{{-100, -100}, {+100, -100}, {0, 200}};
     P.push_back(Sx.p1);
     P.push_back(Sx.p2);
     P.push_back(Sx.p3);
@@ -45,7 +45,7 @@ static std::vector<moth_cell2d> moth_triangulate_bowyer_watson(std::vector<moth_
         std::vector<std::tuple<moth_size_t, moth_size_t>> tr_bad_poly;
         for (moth_size_t k = 0; k < tr.size(); ++k) {
             const moth_cell2d& C = tr[k];
-            if (tr_bad[k] = moth_tri2d::circle({P[C.p1], P[C.p2], P[C.p3]}, p)) {
+            if (tr_bad[k] = moth_triangle2d::circle({P[C.p1], P[C.p2], P[C.p3]}, p)) {
                 tr_bad_poly.emplace_back(C.p1, C.p2);
                 tr_bad_poly.emplace_back(C.p2, C.p3);
                 tr_bad_poly.emplace_back(C.p3, C.p1);
@@ -87,8 +87,8 @@ static std::vector<moth_cell2d> moth_triangulate_bowyer_watson(std::vector<moth_
             moth_cell2d C{std::get<0>(e), std::get<1>(e), i};
 
             /* Make sure that the triangle is CCW. */
-            moth_tri2d T{P[C.p1], P[C.p2], P[C.p3]};
-            if (moth_tri2d::area(T) < 0.0) {
+            moth_triangle2d T{P[C.p1], P[C.p2], P[C.p3]};
+            if (moth_triangle2d::area(T) < 0.0) {
                 std::swap(C.p1, C.p2);
             }
             tr.push_back(C);
@@ -112,7 +112,7 @@ static std::vector<moth_cell2d> moth_triangulate_bowyer_watson(std::vector<moth_
     std::string TrFilePath("res/tr-" + std::to_string(99999) + ".txt");
     std::ofstream TrFile(TrFilePath);
     for (const moth_cell2d& T : tr) {
-        moth_tri2d Tx{P[T.p1], P[T.p2], P[T.p3]};
+        moth_triangle2d Tx{P[T.p1], P[T.p2], P[T.p3]};
         TrFile << Tx.p1 << std::endl
                << Tx.p2 << std::endl
                << Tx.p3 << std::endl
@@ -147,9 +147,9 @@ static std::vector<moth_cell2d> moth_triangulate_ruppert(std::vector<moth_e2d> E
         for (moth_size_t k = 0; k < tr.size(); ++k) {
             const moth_cell2d& C = tr[k];
 
-            moth_tri2d T = {P[C.p1], P[C.p2], P[C.p3]};
-            moth_real_t T_area = std::fabs(moth_tri2d::area(T));
-            moth_real_t T_len = moth_tri2d::len(T);
+            moth_triangle2d T = {P[C.p1], P[C.p2], P[C.p3]};
+            moth_real_t T_area = std::fabs(moth_triangle2d::area(T));
+            moth_real_t T_len = moth_triangle2d::len(T);
             moth_real_t T_quality = T_area / T_len;
             if (std::fabs(1.0 - T_quality) < 1.0 - 0.0) {
                 tr_bad.push_back(k);
@@ -163,8 +163,8 @@ static std::vector<moth_cell2d> moth_triangulate_ruppert(std::vector<moth_e2d> E
             P.push_back({{},{}}); else
         for (moth_size_t k : tr_bad) {
             const moth_cell2d& C = tr[k];
-            moth_tri2d T = {P[C.p1], P[C.p2], P[C.p3]};
-            moth_p2d CC{moth_tri2d::circumcenter(T)};
+            moth_triangle2d T = {P[C.p1], P[C.p2], P[C.p3]};
+            moth_p2d CC{moth_triangle2d::circumcenter(T)};
             P.push_back(CC);
         }
 
@@ -174,7 +174,7 @@ static std::vector<moth_cell2d> moth_triangulate_ruppert(std::vector<moth_e2d> E
     std::string TrFilePath("res/tr-" + std::to_string(99999) + ".txt");
     std::ofstream TrFile(TrFilePath);
     for (const moth_cell2d& T : tr) {
-        moth_tri2d Tx{P[T.p1], P[T.p2], P[T.p3]};
+        moth_triangle2d Tx{P[T.p1], P[T.p2], P[T.p3]};
         TrFile << Tx.p1 << std::endl
                << Tx.p2 << std::endl
                << Tx.p3 << std::endl

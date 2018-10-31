@@ -38,9 +38,9 @@ public:
     std::vector<moth_e2d> tri_edges;
 
     MOTH_HOST
-    bool _triangle(moth_tri2d& tr, const moth_cell2d_tri& cell) const;
+    bool _triangle(moth_triangle2d& tr, const moth_cell2d_tri& cell) const;
     MOTH_HOST
-    moth_tri2d triangle(const moth_cell2d_tri& C, bool* boundary = nullptr) const;
+    moth_triangle2d triangle(const moth_cell2d_tri& C, bool* boundary = nullptr) const;
 
 public:
     MOTH_HOST
