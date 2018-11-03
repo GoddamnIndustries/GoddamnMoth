@@ -3,6 +3,7 @@
 #include "libGeometry2D/src/GeomDelaunay.hh"
 #include "libGeometry2D/src/GeomTriangulation.hh"
 #include "libGeometry2D/src/GeomMesh.hh"
+#include "libGeometry2D/src/GeomMesh2.hh"
 
 moth_real_t f(const moth_p3d& x)
 {
@@ -40,20 +41,34 @@ moth_p3d moth_grad(const moth_tetrahedron& T, moth_real_t f1, moth_real_t f2,
 int main()
 {
 #if 1
-    std::default_random_engine random_engine(228);
+    std::default_random_engine random_engine;
     std::uniform_real_distribution<moth_real_t> uniform_distribution(-1.0, 1.0);
 
-    moth_mesh2d builder;
+    DT::moth_mesh2d builder;
 
-    auto c = clock();
-    for (moth_size_t k = 0; k < 3; ++k) {
-        moth_p2d p{uniform_distribution(random_engine),
-                   uniform_distribution(random_engine)};
-        builder.insert(p);
+    for (moth_size_t m = 0; m < 2; ++m) {
+        auto c = clock();
+        for (moth_size_t k = 0; k < 10000; ++k) {
+            moth_p2d p{uniform_distribution(random_engine),
+                       uniform_distribution(random_engine)};
+            builder.insert(p);
+        }
+
+        c = clock() - c;
+        std::cerr << m + 1 << " " << moth_real_t(c) / CLOCKS_PER_SEC << std::endl;
     }
-    c = clock() - c;
-    std::cerr << moth_real_t(c) / CLOCKS_PER_SEC << std::endl;
     builder.print();
+#endif
+
+#if 0
+    for (moth_size_t i = 0; i < 20; ++i) {
+        std::cerr << i << std::endl;
+        moth_real_t r = 1.0;
+        moth_real_t phi = 2.0 * i / 20.0 * MOTH_PI;
+        moth_real_t x = r * cos(phi);
+        moth_real_t y = r * sin(phi);
+        builder.insert({x, y});
+    }
 #endif
 
 #if 0

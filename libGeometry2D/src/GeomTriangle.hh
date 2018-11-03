@@ -52,7 +52,7 @@ public:
         moth_real_t det{moth_det(t1.p1.x - p1.x, t1.p1.y - p1.y, a13,
                                  t1.p2.x - p1.x, t1.p2.y - p1.y, a23,
                                  t1.p3.x - p1.x, t1.p3.y - p1.y, a33)};
-        return det > 0;
+        return det >= 0;
     }
 
 public:

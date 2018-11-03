@@ -55,7 +55,6 @@ public:
 struct MOTH_CORE moth_mesh2d
 {
     std::vector<moth_mesh2d_triangle*> pTriangles;
-    std::vector<moth_mesh2d_e*> pEdges;
     std::vector<moth_mesh2d_p*> pPoints;
 
 public:
@@ -66,7 +65,7 @@ public:
         moth_mesh2d_triangle* pT = new moth_mesh2d_triangle{};
         pT->pP1 = new moth_mesh2d_p{{-4.0, -4.0}, pT};
         pT->pP2 = new moth_mesh2d_p{{+4.0, -4.0}, pT};
-        pT->pP3 = new moth_mesh2d_p{{ 0.0, +4.0}, pT};
+        pT->pP3 = new moth_mesh2d_p{{   0.0, +4.0}, pT};
 
         /* Add super triangle. */
         pTriangles.reserve(capacity);
@@ -77,27 +76,39 @@ public:
         pPoints.push_back(pT->pP1);
         pPoints.push_back(pT->pP2);
         pPoints.push_back(pT->pP3);
-
-        /* Add super triangle edges. */
-        pEdges.reserve(2 * capacity);
-        pEdges.push_back(new moth_mesh2d_e{pT->pP2, pT->pP3, pT});
-        pEdges.push_back(new moth_mesh2d_e{pT->pP3, pT->pP1, pT});
-        pEdges.push_back(new moth_mesh2d_e{pT->pP1, pT->pP2, pT});
     }
 
 public:
     MOTH_HOST
-    void insert(const moth_p2d& p)
+    void insert(const moth_p2d& p1)
     {
+        moth_p2d p{p1};
+        //p.x = std::round(p.x / 0.0001) * 0.0001;
+        //p.y = std::round(p.y / 0.0001) * 0.0001;
+
         /* Insert the point. */
         pPoints.push_back(new moth_mesh2d_p{p});
         moth_mesh2d_p* pP = pPoints.back();
 
+#if 0
         /* Find bad triangles. */
+        for (moth_size_t i = 0, j = pTriangles.size(); i < j;) {
+            moth_mesh2d_triangle* pT = pTriangles[i];
+            pT->bad = moth_triangle2d::circle(**pT, *pP);
+            if (pT->bad) {
+                std::swap(pTriangles[i], pTriangles[j - 1]);
+                j--;
+            } else {
+                i++;
+            }
+        }
+#endif
+
+#if 1
         for (moth_mesh2d_triangle* pT : pTriangles) {
             pT->bad = moth_triangle2d::circle(**pT, *pP);
-            pT->visited = false;
         }
+#endif
 
         /* Find first border bad triangle and sort it. */
         moth_mesh2d_triangle* pT = nullptr;
@@ -124,58 +135,50 @@ public:
         moth_mesh2d_triangle* pT_f{};
         moth_mesh2d_triangle* pT_c{};
         moth_mesh2d_triangle* pT_p{};
-
-        static int iii = 0;
-        int kkk = 0;
-        ++iii;
-
-        do {
-            if (pT->pT1 == nullptr || !pT->pT1->bad) {
-                pT_p = pT_c;
-                pT_c = new moth_mesh2d_triangle{pP, pT->pP2, pT->pP3};
-                if (pT_f == nullptr) {
-                    pT_f = pT_c;
-                }
-
-                /* Add new triangle and link it with outer
-                 * neighbor and previous triangle. */
-                pTriangles.push_back(pT_c);
-                if (pT->pT1 != nullptr) {
-                    if (pT->pT1->pT1 == pT) {
-                        pT->pT1->pT1 = pT_c;
-                    } else if (pT->pT1->pT2 == pT) {
-                        pT->pT1->pT2 = pT_c;
-                    } else if (pT->pT1->pT3 == pT) {
-                        pT->pT1->pT3 = pT_c;
-                    }
-                    pT_c->pT1 = pT->pT1->pT1;
-                }
-                if (pT_p != nullptr) {
-                    pT_p->pT2 = pT_c;
-                    pT_c->pT3 = pT_p;
-                }
-
-                if (pT->pT2 != nullptr && pT->pT2->bad) {
-                    /* CCW turn to the neighbor triangle. */
-                    while (pT->pT2->pP1 != pT->pP1) {
-                        pT->pT2->shift();
-                    }
-                    pT = pT->pT2;
-                } else {
-                    /* CCW turn inside current triangle. */
-                    pT->shift();
-                }
-            } else {
-                while (pT->pT1->pP1 != pT->pP3) {
-                    pT->pT1->shift();
-                }
-                pT = pT->pT1;
+        while (true) {
+            pT_p = pT_c;
+            pT_c = new moth_mesh2d_triangle{pP, pT->pP2, pT->pP3};
+            if (pT_f == nullptr) {
+                pT_f = pT_c;
             }
 
-            ++kkk;
-            if (iii == 3 && kkk == 3) break;
-        } while (pT->pP2 != pP_f);
+            /* Add new triangle and link it with outer
+             * neighbor and previous triangle. */
+            pTriangles.push_back(pT_c);
+            if (pT->pT1 != nullptr) {
+                while (pT->pP2 != pT->pT1->pP3) {
+                    pT->pT1->shift();
+                }
+                pT->pT1->pT1 = pT_c;
+                pT_c->pT1 = pT->pT1;
+            }
+            if (pT_p != nullptr) {
+                while (pT_c->pP2 != pT_p->pP3) {
+                    pT_p->shift();
+                }
+                pT_c->pT3 = pT_p;
+                pT_p->pT2 = pT_c;
+            }
 
+            if (pT->pP3 == pP_f) {
+                break;
+            }
+
+            if (pT->pT2 == nullptr || !pT->pT2->bad) {
+                pT->shift();
+            } else {
+                while (pT->pP1 != pT->pT2->pP1) {
+                    pT->pT2->shift();
+                }
+                pT = pT->pT2;
+                while (!(pT->pT1 == nullptr || !pT->pT1->bad)) {
+                    while (pT->pP3 != pT->pT1->pP1) {
+                        pT->pT1->shift();
+                    }
+                    pT = pT->pT1;
+                }
+            }
+        }
         /* Link first and last triangle. */
         pT_p = pT_c;
         pT_c = pT_f;
@@ -183,14 +186,15 @@ public:
         pT_c->pT3 = pT_p;
 
         /* Remove bad triangles. */
-        pTriangles.erase(std::remove_if(pTriangles.begin(), pTriangles.end(), [](const moth_mesh2d_triangle* pT) {
-            if (pT->bad) {
-                delete pT;
-                return true;
-            } else {
-                return false;
-            }
-        }), pTriangles.end());
+        pTriangles.erase(std::remove_if(pTriangles.begin(), pTriangles.end(),
+            [](const moth_mesh2d_triangle* pT) {
+                if (pT->bad) {
+                    delete pT;
+                    return true;
+                } else {
+                    return false;
+                }
+            }), pTriangles.end());
     }
 
     void print()
@@ -200,15 +204,25 @@ public:
 
         for (moth_size_t i = 0; i < pTriangles.size(); ++i) {
             const moth_mesh2d_triangle* pT = pTriangles[i];
-
+#if 0
+            if (pT->pP1 == pPoints[0]) continue;
+            if (pT->pP1 == pPoints[1]) continue;
+            if (pT->pP1 == pPoints[2]) continue;
+            if (pT->pP2 == pPoints[0]) continue;
+            if (pT->pP2 == pPoints[1]) continue;
+            if (pT->pP2 == pPoints[2]) continue;
+            if (pT->pP3 == pPoints[0]) continue;
+            if (pT->pP3 == pPoints[1]) continue;
+            if (pT->pP3 == pPoints[2]) continue;
+#endif
 
             TrFile << *pT->pP1 << std::endl
                    << *pT->pP2 << std::endl
                    << *pT->pP3 << std::endl
                    << *pT->pP1 << std::endl
-                   << std::endl
-                   << (*pT->pP1 + *pT->pP2 + *pT->pP3)/3 << std::endl
-                   << (*pT->pP1 + *pT->pP2 + *pT->pP3)/3 << std::endl
+                   //<< std::endl
+                   //<< (*pT->pP1 + *pT->pP2 + *pT->pP3)/3 << std::endl
+                   //<< (*pT->pP1 + *pT->pP2 + *pT->pP3)/3 << std::endl
                    << std::endl;
         }
     }

@@ -8,7 +8,7 @@ if(MSVC)
 endif(MSVC)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "-std=c++17")
+set(CMAKE_CXX_FLAGS "-std=c++17 -g -O3 -ffast-math -mavx")
 add_executable(GoddamnOpuwenijSolver main.cc
         libCommon/src/CommTest.hh
 
@@ -17,4 +17,4 @@ add_executable(GoddamnOpuwenijSolver main.cc
         libGeometry2D/src/GeomBox.hh libGeometry2D/src/GeomBox.cc
         libGeometry2D/src/GeomEdge.hh libGeometry2D/src/GeomEdge.cc
         libGeometry2D/src/GeomPoly.cc libGeometry2D/src/GeomPoly.hh
-        libGeometry2D/src/GeomTriangle.cc libGeometry2D/src/GeomTriangle.hh libGeometry2D/src/GeomTetrahedron.cc libGeometry2D/src/GeomTetrahedron.hh libGeometry2D/src/GeomDelaunay.cc libGeometry2D/src/GeomDelaunay.hh libGeometry2D/src/GeomTriangulation.cc libGeometry2D/src/GeomTriangulation.hh libGeometry2D/src/GeomMesh.cc libGeometry2D/src/GeomMesh.hh)
+        libGeometry2D/src/GeomTriangle.cc libGeometry2D/src/GeomTriangle.hh libGeometry2D/src/GeomTetrahedron.cc libGeometry2D/src/GeomTetrahedron.hh libGeometry2D/src/GeomDelaunay.cc libGeometry2D/src/GeomDelaunay.hh libGeometry2D/src/GeomTriangulation.cc libGeometry2D/src/GeomTriangulation.hh libGeometry2D/src/GeomMesh.cc libGeometry2D/src/GeomMesh.hh libGeometry2D/src/GeomMesh2.hh)
