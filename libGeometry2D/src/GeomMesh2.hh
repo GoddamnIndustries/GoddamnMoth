@@ -9,6 +9,7 @@
 
 #include "libGeometry2D/src/GeomBase.hh"
 #include "libGeometry2D/src/GeomTriangle.hh"
+#include "libGeometry2D/src/GeomSort.hh"
 
 #undef assert
 #define assert(...)
@@ -394,12 +395,14 @@ public:
 
 public:
     MOTH_HOST
-    void insert(const moth_p2d& p1)
+    void insert(const moth_p2d& p1, moth_real_t eps = 0.0)
     {
         /* Round-off the point. */
         moth_p2d p{p1};
-        //p.x = std::round(p.x / 0.0001) * 0.0001;
-        //p.y = std::round(p.y / 0.0001) * 0.0001;
+        if (eps > 0.0) {
+            p.x = std::round(p.x / eps) * eps;
+            p.y = std::round(p.y / eps) * eps;
+        }
 
         /* Insert the point. */
         moth_mesh2d_point_iter pP{pPoints.data(), pTriangles.data(), pPoints.size()};
@@ -429,11 +432,8 @@ public:
 
             /* Presort the triangle to start the walk-around:
              * make a border oppose the first point. */
-            if (pT_cur.triangle(2).good()) {
-                moth_mesh2d_utils::shift(pT_cur);  /* 1,2,3 -> 2,1,3 */
-            } else if (pT_cur.triangle(3).good()) {
-                moth_mesh2d_utils::shift(pT_cur);  /* 1,2,3 -> 2,1,3 */
-                moth_mesh2d_utils::shift(pT_cur);  /* 2,1,3 -> 3,2,1 */
+            while (pT_cur.triangle(1).bad()) {
+                moth_mesh2d_utils::shift(pT_cur);
             }
 
             /* Walk around a border of the re-triangulation
@@ -453,7 +453,7 @@ public:
                 /* Carefully set the neighbors. */
                 if (pT_cur.triangle(1).valid()) {
                     /* Link the triangle with the outer neighbor.
-                     * ( The outer triangle may not be presorted. )*/
+                     * ( The outer triangle may not be presorted. ) */
                     while (pT_cur.point(2) != pT_cur.triangle(1).point(3)) {
                         moth_mesh2d_utils::shift(pT_cur.triangle(1));
                     }
@@ -506,7 +506,16 @@ public:
             }
         }
     }
+    MOTH_HOST
+    void insert(moth_p2d* pP_beg, moth_p2d* pP_end)
+    {
+        moth_sort(pP_beg, pP_end);
+        for (moth_p2d* pP_cur = pP_beg; pP_cur != pP_end; ++pP_cur) {
+            insert(*pP_cur);
+        }
+    }
 
+public:
     void print(bool center = false)
     {
         std::string file_path("res/tr-" + std::to_string(99999) + ".txt");

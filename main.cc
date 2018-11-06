@@ -4,6 +4,7 @@
 #include "libGeometry2D/src/GeomTriangulation.hh"
 #include "libGeometry2D/src/GeomMesh.hh"
 #include "libGeometry2D/src/GeomMesh2.hh"
+#include "libGeometry2D/src/GeomSort.hh"
 
 moth_real_t f(const moth_p3d& x)
 {
@@ -40,7 +41,38 @@ moth_p3d moth_grad(const moth_tetrahedron& T, moth_real_t f1, moth_real_t f2,
 
 int main()
 {
-#if 1
+#if 0
+    std::vector<moth_p2d> points;
+    for (moth_real_t i = 0; i <= 31; ++i) {
+        for (moth_real_t j = 0; j <= 31; ++j) {
+            points.push_back({i, j});
+        }
+    }
+    moth_sort(points.data(), points.data() + points.size());
+#endif
+
+#if 0
+    std::default_random_engine random_engine;
+    std::uniform_real_distribution<moth_real_t> uniform_distribution(-1.0, 1.0);
+
+    std::vector<moth_p2d> points;
+    points.reserve(10000000);
+
+    for (moth_size_t m = 0; m < 10; ++m) {
+        for (moth_size_t k = 0; k < 1000000; ++k) {
+            moth_p2d p{uniform_distribution(random_engine),
+                       uniform_distribution(random_engine)};
+            points.push_back(p);
+        }
+
+        auto c = clock();
+        moth_sort(points.data(), points.data() + points.size());
+        c = clock() - c;
+        std::cerr << m + 1 << " " << moth_real_t(c) / CLOCKS_PER_SEC << std::endl;
+    }
+#endif
+
+#if 0
     std::default_random_engine random_engine;
     std::uniform_real_distribution<moth_real_t> uniform_distribution(-1.0, 1.0);
 
@@ -54,6 +86,30 @@ int main()
             builder.insert(p);
         }
 
+        c = clock() - c;
+        std::cerr << m + 1 << " " << moth_real_t(c) / CLOCKS_PER_SEC << std::endl;
+    }
+    builder.print();
+#endif
+
+#if 1
+    std::default_random_engine random_engine;
+    std::uniform_real_distribution<moth_real_t> uniform_distribution(-1.0, 1.0);
+
+    DT::moth_mesh2d builder;
+    std::vector<moth_p2d> points;
+    points.reserve(10000);
+
+    for (moth_size_t m = 0; m < 1; ++m) {
+        points.clear();
+        for (moth_size_t k = 0; k < 100; ++k) {
+            moth_p2d p{uniform_distribution(random_engine),
+                       uniform_distribution(random_engine)};
+            points.push_back(p);
+        }
+
+        auto c = clock();
+        builder.insert(points.data(), points.data() + points.size());
         c = clock() - c;
         std::cerr << m + 1 << " " << moth_real_t(c) / CLOCKS_PER_SEC << std::endl;
     }
