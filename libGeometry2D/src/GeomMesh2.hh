@@ -302,69 +302,49 @@ public:
         assert(pT1.pPoints == pT2.pPoints &&
                pT1.pTriangles == pT2.pTriangles);
         if (pT1 != pT2) {
-            if (pT1 != pT2.triangle(1) &&
-                pT1 != pT2.triangle(2) &&
-                pT1 != pT2.triangle(3)) {
+            moth_mesh2d_triangle& T1{pT1.pTriangles[pT1.nT]};
+            moth_mesh2d_triangle& T2{pT2.pTriangles[pT2.nT]};
 
-                /* Re-link neighbors of the first triangle to the second one. */
-                for (moth_size_t k = 1; k <= 3; ++k) {
-                    moth_mesh2d_triangle_iter pT1_k = pT1.triangle(k);
-                    if (pT1_k.valid()) {
-                        for (moth_size_t m = 1; m <= 3; ++m) {
-                            if (pT1_k.triangle(m) == pT1) {
-                                pT1_k.set_triangle(m, pT2);
-                                break;
-                            }
-                        }
-                    }
-                }
-                /* Re-link neighbors of the second triangle to the first one. */
-                for (moth_size_t k = 1; k <= 3; ++k) {
-                    moth_mesh2d_triangle_iter pT2_k = pT2.triangle(k);
-                    if (pT2_k.valid()) {
-                        for (moth_size_t m = 1; m <= 3; ++m) {
-                            if (pT2_k.triangle(m) == pT2) {
-                                pT2_k.set_triangle(m, pT1);
-                                break;
-                            }
-                        }
-                    }
-                }
-            } else {
+            /* @todo Rewrite this without using additional vector. */
+            std::vector<moth_size_t*> pnT_neighbors;
+            pnT_neighbors.reserve(9);
 
-                /* Relink the triangles with common edges first. */
-                while (pT1 != pT2.triangle(1)) {
-                    moth_mesh2d_utils::shift(pT2);
+            /* Find neighbors of the first triangle. */
+            for (moth_size_t k = 1; k <= 3; ++k) {
+                if (T1.nnT(k) != MOTH_NPOS) {
+                    moth_mesh2d_triangle& T1_k{pT1.pTriangles[T1.nnT(k)]};
+                    for (moth_size_t m = 1; m <= 3; ++m) {
+                        if (T1_k.nnT(m) == pT1.nT) {
+                            pnT_neighbors.push_back(&T1_k.nnT(m));
+                            break;
+                        }
+                    }
                 }
-                while (pT2 != pT1.triangle(1)) {
-                    moth_mesh2d_utils::shift(pT1);
+            }
+            /* Find neighbors of the second triangle. */
+            for (moth_size_t k = 1; k <= 3; ++k) {
+                if (T2.nnT(k) != MOTH_NPOS) {
+                    moth_mesh2d_triangle& T2_k{pT2.pTriangles[T2.nnT(k)]};
+                    for (moth_size_t m = 1; m <= 3; ++m) {
+                        if (T2_k.nnT(m) == pT2.nT) {
+                            pnT_neighbors.push_back(&T2_k.nnT(m));
+                            break;
+                        }
+                    }
                 }
-                std::swap(pT1.pTriangles[pT1.nT].nT1,
-                          pT2.pTriangles[pT2.nT].nT1);
+            }
 
-                /* Re-link other neighbors of the first triangle to the second one. */
-                for (moth_size_t k = 2; k <= 3; ++k) {
-                    moth_mesh2d_triangle_iter pT1_k = pT1.triangle(k);
-                    if (pT1_k.valid()) {
-                        for (moth_size_t m = 1; m <= 3; ++m) {
-                            if (pT1_k.triangle(m) == pT1) {
-                                pT1_k.set_triangle(m, pT2);
-                                break;
-                            }
-                        }
-                    }
-                }
-                /* Re-link other neighbors of the second triangle to the first one. */
-                for (moth_size_t k = 2; k <= 3; ++k) {
-                    moth_mesh2d_triangle_iter pT2_k = pT2.triangle(k);
-                    if (pT2_k.valid()) {
-                        for (moth_size_t m = 1; m <= 3; ++m) {
-                            if (pT2_k.triangle(m) == pT2) {
-                                pT2_k.set_triangle(m, pT1);
-                                break;
-                            }
-                        }
-                    }
+            /* Find only unique neighbors and relink them. */
+            std::sort(pnT_neighbors.begin(), pnT_neighbors.end());
+            pnT_neighbors.erase(std::unique(pnT_neighbors.begin(), pnT_neighbors.end()), pnT_neighbors.end());
+            for (moth_size_t* pnT : pnT_neighbors) {
+                if (*pnT == pT1.nT) {
+                    *pnT = pT2.nT;
+                } else if (*pnT == pT2.nT) {
+                    *pnT = pT1.nT;
+                } else {
+                    std::cerr << "Bug in triangles swapping." << std::endl;
+                    std::abort();
                 }
             }
 
@@ -421,93 +401,93 @@ public:
         //p.x = std::round(p.x / 0.0001) * 0.0001;
         //p.y = std::round(p.y / 0.0001) * 0.0001;
 
-        /* Insert the point -- =O(1). */
+        /* Insert the point. */
         moth_mesh2d_point_iter pP{pPoints.data(), pTriangles.data(), pPoints.size()};
         pPoints.push_back(p);
 
         /* Find bad triangles and move them to the end -- O(n).
          * @todo Optimize this by using the connectivity -- O(log(n)). */
-        for (moth_mesh2d_triangle_iter cur = triangle_begin(),
-                                       end = triangle_end(); cur != end;) {
-            cur.bbad() = moth_triangle2d::circle(*cur, *pP);
-            if (cur.bad()) {
-                moth_mesh2d_triangle_iter::swap(cur, --end);
+        for (moth_mesh2d_triangle_iter pT_cur = triangle_begin(),
+                                       pT_end = triangle_end(); pT_cur != pT_end;) {
+            pT_cur.bbad() = moth_triangle2d::circle(*pT_cur, *pP);
+            if (pT_cur.bad()) {
+                moth_mesh2d_triangle_iter::swap(pT_cur, --pT_end);
             } else {
-                ++cur;
+                ++pT_cur;
             }
         }
 
         /* Find the first bad border triangle and proceed to walk-around it
          * by using the connectivity -- ~O(log(n)). */
-        for (moth_mesh2d_triangle_iter cur = triangle_begin(),
-                                       end = triangle_end(); cur != end; ++cur) {
-            if (cur.good() || (cur.triangle(1).bad() &&
-                               cur.triangle(2).bad() &&
-                               cur.triangle(3).bad())) {
+        for (moth_mesh2d_triangle_iter pT_cur = triangle_begin(),
+                                       pT_end = triangle_end(); pT_cur != pT_end; ++pT_cur) {
+            if (pT_cur.good() || (pT_cur.triangle(1).bad() &&
+                                  pT_cur.triangle(2).bad() &&
+                                  pT_cur.triangle(3).bad())) {
                 continue;
             }
 
             /* Presort the triangle to start the walk-around:
              * make a border oppose the first point. */
-            if (cur.triangle(2).good()) {
-                moth_mesh2d_utils::shift(cur);  /* 1,2,3 -> 2,1,3 */
-            } else if (cur.triangle(3).good()) {
-                moth_mesh2d_utils::shift(cur);  /* 1,2,3 -> 2,1,3 */
-                moth_mesh2d_utils::shift(cur);  /* 2,1,3 -> 3,2,1 */
+            if (pT_cur.triangle(2).good()) {
+                moth_mesh2d_utils::shift(pT_cur);  /* 1,2,3 -> 2,1,3 */
+            } else if (pT_cur.triangle(3).good()) {
+                moth_mesh2d_utils::shift(pT_cur);  /* 1,2,3 -> 2,1,3 */
+                moth_mesh2d_utils::shift(pT_cur);  /* 2,1,3 -> 3,2,1 */
             }
 
             /* Walk around a border of the re-triangulation
              * area in CCW orientation inserting the triangles to the back. */
-            moth_mesh2d_point_iter pP_frs{cur.point(2)};
-            for (moth_mesh2d_triangle_iter add{}, prv{}, frs{};;) {
+            moth_mesh2d_point_iter pP_frs{pT_cur.point(2)};
+            for (moth_mesh2d_triangle_iter pT_new{}, pT_prv{}, pT_frs{};;) {
 
                 /* Add the new triangle. */
-                pTriangles.push_back({pP.nP, cur.point(2).nP,
-                                             cur.point(3).nP});
-                prv = add;
-                add = triangle_end() - 1;
-                if (frs.invalid()) {
-                    frs = add;
+                pTriangles.push_back({pP.nP, pT_cur.point(2).nP,
+                                             pT_cur.point(3).nP});
+                pT_prv = pT_new;
+                pT_new = triangle_end() - 1;
+                if (pT_frs.invalid()) {
+                    pT_frs = pT_new;
                 }
 
                 /* Carefully set the neighbors. */
-                if (cur.triangle(1).valid()) {
+                if (pT_cur.triangle(1).valid()) {
                     /* Link the triangle with the outer neighbor.
                      * ( The outer triangle may not be presorted. )*/
-                    while (cur.point(2) != cur.triangle(1).point(3)) {
-                        moth_mesh2d_utils::shift(cur.triangle(1));
+                    while (pT_cur.point(2) != pT_cur.triangle(1).point(3)) {
+                        moth_mesh2d_utils::shift(pT_cur.triangle(1));
                     }
-                    cur.triangle(1).set_triangle(1, add);
-                    add.set_triangle(1, cur.triangle(1));
+                    pT_cur.triangle(1).set_triangle(1, pT_new);
+                    pT_new.set_triangle(1, pT_cur.triangle(1));
                 }
-                if (prv.valid()) {
+                if (pT_prv.valid()) {
                     /* Link the triangle with the previous one. */
-                    add.set_triangle(3, prv);
-                    prv.set_triangle(2, add);
+                    pT_new.set_triangle(3, pT_prv);
+                    pT_prv.set_triangle(2, pT_new);
                 }
-                if (cur.point(3) == pP_frs) {
+                if (pT_cur.point(3) == pP_frs) {
                     /* End point of the last segment is the starting point.
                      * Link the last triangle with the first one and break. */
-                    frs.set_triangle(3, add);
-                    add.set_triangle(2, frs);
+                    pT_frs.set_triangle(3, pT_new);
+                    pT_new.set_triangle(2, pT_frs);
                     break;
                 }
 
                 /* Carefully proceed to the new edge:
                  * if possible, rotate the current triangle, otherwise select the
                  * new triangle with edge CCW continuation. */
-                if (cur.triangle(2).good()) {
-                    moth_mesh2d_utils::shift(cur);
+                if (pT_cur.triangle(2).good()) {
+                    moth_mesh2d_utils::shift(pT_cur);
                 } else {
-                    while (cur.point(1) != cur.triangle(2).point(1)) {
-                        moth_mesh2d_utils::shift(cur.triangle(2));
+                    while (pT_cur.point(1) != pT_cur.triangle(2).point(1)) {
+                        moth_mesh2d_utils::shift(pT_cur.triangle(2));
                     }
-                    cur = cur.triangle(2);
-                    while (cur.triangle(1).bad()) {
-                        while (cur.point(3) != cur.triangle(1).point(1)) {
-                            moth_mesh2d_utils::shift(cur.triangle(1));
+                    pT_cur = pT_cur.triangle(2);
+                    while (pT_cur.triangle(1).bad()) {
+                        while (pT_cur.point(3) != pT_cur.triangle(1).point(1)) {
+                            moth_mesh2d_utils::shift(pT_cur.triangle(1));
                         }
-                        cur = cur.triangle(1);
+                        pT_cur = pT_cur.triangle(1);
                     }
                 }
             }
@@ -516,13 +496,13 @@ public:
 
         /* Find bad triangles, move them to the end and delete -- O(n).
          * @todo Optimize this by using the connectivity -- O(log(n)). */
-        for (moth_mesh2d_triangle_iter cur = triangle_begin(),
-                                       end = triangle_end(); cur != end;) {
-            if (cur.bad()) {
-                moth_mesh2d_triangle_iter::swap(cur, --end);
+        for (moth_mesh2d_triangle_iter pT_cur = triangle_begin(),
+                                       pT_end = triangle_end(); pT_cur != pT_end;) {
+            if (pT_cur.bad()) {
+                moth_mesh2d_triangle_iter::swap(pT_cur, --pT_end);
                 pTriangles.pop_back();
             } else {
-                ++cur;
+                ++pT_cur;
             }
         }
     }

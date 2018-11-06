@@ -8,7 +8,7 @@ if(MSVC)
 endif(MSVC)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "-std=c++17 -g -O3 -ffast-math -mavx")
+set(CMAKE_CXX_FLAGS "-std=c++17 -g -ffast-math -mavx")
 add_executable(GoddamnOpuwenijSolver main.cc
         libCommon/src/CommTest.hh
 

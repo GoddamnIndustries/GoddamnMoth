@@ -46,9 +46,9 @@ int main()
 
     DT::moth_mesh2d builder;
 
-    for (moth_size_t m = 0; m < 2; ++m) {
+    for (moth_size_t m = 0; m < 1; ++m) {
         auto c = clock();
-        for (moth_size_t k = 0; k < 10000; ++k) {
+        for (moth_size_t k = 0; k < 100; ++k) {
             moth_p2d p{uniform_distribution(random_engine),
                        uniform_distribution(random_engine)};
             builder.insert(p);
