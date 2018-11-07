@@ -2,7 +2,7 @@
 #include "libGeometry2D/src/GeomTetrahedron.hh"
 #include "libGeometry2D/src/GeomDelaunay.hh"
 #include "libGeometry2D/src/GeomTriangulation.hh"
-#include "libGeometry2D/src/GeomMesh.hh"
+//#include "libGeometry2D/src/GeomMesh.hh"
 #include "libGeometry2D/src/GeomMesh2.hh"
 #include "libGeometry2D/src/GeomSort.hh"
 
@@ -56,10 +56,10 @@ int main()
     std::uniform_real_distribution<moth_real_t> uniform_distribution(-1.0, 1.0);
 
     std::vector<moth_p2d> points;
-    points.reserve(10000000);
+    points.reserve(100000000);
 
     for (moth_size_t m = 0; m < 10; ++m) {
-        for (moth_size_t k = 0; k < 1000000; ++k) {
+        for (moth_size_t k = 0; k < 10000000; ++k) {
             moth_p2d p{uniform_distribution(random_engine),
                        uniform_distribution(random_engine)};
             points.push_back(p);
