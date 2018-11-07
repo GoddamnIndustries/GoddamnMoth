@@ -8,7 +8,15 @@ if(MSVC)
 endif(MSVC)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "-std=c++17 -O3 -ffast-math -mavx -fopenmp")
+
+
+set(CMAKE_CXX_FLAGS "-std=c++17 -O3 -ffast-math -mavx")
+if(APPLE)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xpreprocessor -fopenmp -lomp -L/usr/local/opt/libomp/lib -I/usr/local/opt/libomp/include")
+else(APPLE)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+endif()
+
 add_executable(GoddamnOpuwenijSolver main.cc
         libCommon/src/CommTest.hh
 
