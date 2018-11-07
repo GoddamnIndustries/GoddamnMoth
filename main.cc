@@ -51,7 +51,7 @@ int main()
     moth_sort(points.data(), points.data() + points.size());
 #endif
 
-#if 0
+#if 1
     std::default_random_engine random_engine;
     std::uniform_real_distribution<moth_real_t> uniform_distribution(-1.0, 1.0);
 
@@ -92,7 +92,7 @@ int main()
     builder.print();
 #endif
 
-#if 1
+#if 0
     std::default_random_engine random_engine;
     std::uniform_real_distribution<moth_real_t> uniform_distribution(-1.0, 1.0);
 
