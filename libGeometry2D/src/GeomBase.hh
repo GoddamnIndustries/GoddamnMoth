@@ -75,14 +75,14 @@ int fsgn(T val)
 // ------------------------------------------------------------------------------------ //
 
 MOTH_HOST MOTH_DEVICE
-inline moth_size_t moth_fdiv2(moth_size_t& s)
+inline moth_size_t moth_fdiv2(moth_size_t s)
 {
-    s /= 2;
+    return s / 2;
 }
 MOTH_HOST MOTH_DEVICE
-inline moth_size_t moth_cdiv2(moth_size_t& s)
+inline moth_size_t moth_cdiv2(moth_size_t s)
 {
-    s = s / 2 + s % 2;
+    return s / 2 + s % 2;
 }
 
 // ------------------------------------------------------------------------------------ //
