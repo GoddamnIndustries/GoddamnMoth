@@ -1,7 +1,5 @@
 
 #include "libGeometry2D/src/GeomTetrahedron.hh"
-#include "libGeometry2D/src/GeomDelaunay.hh"
-#include "libGeometry2D/src/GeomTriangulation.hh"
 //#include "libGeometry2D/src/GeomMesh.hh"
 #include "libGeometry2D/src/GeomMesh2.hh"
 #include "libGeometry2D/src/GeomSort.hh"
