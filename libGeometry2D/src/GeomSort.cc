@@ -23,7 +23,6 @@ inline void moth_omp_tasks(bool cond, moth_task1_t&& task1,
             {
                 task2();
             }
-#pragma omp taskwait
         }
     } else {
         task1();
@@ -50,7 +49,7 @@ static void moth_sort_recursive(moth_p2d* pP_beg,
                                 const moth_p2d& p_min,
                                 const moth_p2d& p_max,
                                 moth_size_t orient,
-                                moth_size_t num_cores)
+                                moth_size_t threads)
 {
     assert(pP_beg != nullptr);
     assert(pP_end != nullptr);
@@ -59,9 +58,7 @@ static void moth_sort_recursive(moth_p2d* pP_beg,
 
         /* Separate quoters based on the orientation. */
         moth_p2d* pP1{pP_beg};
-        moth_p2d* pP2{};
         moth_p2d* pP3{};
-        moth_p2d* pP4{};
         switch (orient) {
             /* 4-|3
              * 1-|2 Orientation. */
@@ -75,10 +72,10 @@ static void moth_sort_recursive(moth_p2d* pP_beg,
                         ++pP3;
                     }
                 }
-                moth_omp_tasks(num_cores >= 2, [&]() {
+                moth_omp_tasks(threads >= 2, [=]() {
                     /* Separate left and right quadrants of the lower half
                      * and recursively process the quadrants. */
-                    pP2 = pP1;
+                    moth_p2d* pP2 = pP1;
                     for (moth_p2d* pP2_end{pP3}; pP2 != pP2_end;) {
                         if (pP2->x > p_cnr.x) {
                             std::swap(*pP2, *--pP2_end);
@@ -86,12 +83,12 @@ static void moth_sort_recursive(moth_p2d* pP_beg,
                             ++pP2;
                         }
                     }
-                    moth_sort_recursive(pP1, pP2, {p_min.x, p_min.y}, {p_cnr.x, p_cnr.y}, 1, moth_fdiv2(num_cores));
-                    moth_sort_recursive(pP2, pP3, {p_cnr.x, p_min.y}, {p_max.x, p_cnr.y}, 0, moth_fdiv2(num_cores));
-                }, [&]() {
+                    moth_sort_recursive(pP1, pP2, {p_min.x, p_min.y}, {p_cnr.x, p_cnr.y}, 1, moth_fdiv2(threads));
+                    moth_sort_recursive(pP2, pP3, {p_cnr.x, p_min.y}, {p_max.x, p_cnr.y}, 0, moth_fdiv2(threads));
+                }, [=]() {
                     /* Separate right and left quadrants of the upper half
                      * and recursively process the quadrants. */
-                    pP4 = pP3;
+                    moth_p2d* pP4 = pP3;
                     for (moth_p2d* pP4_end{pP_end}; pP4 != pP4_end;) {
                         if (pP4->x < p_cnr.x) {
                             std::swap(*pP4, *--pP4_end);
@@ -99,8 +96,8 @@ static void moth_sort_recursive(moth_p2d* pP_beg,
                             ++pP4;
                         }
                     }
-                    moth_sort_recursive(pP3, pP4, {p_cnr.x, p_cnr.y}, {p_max.x, p_max.y}, 0, moth_cdiv2(num_cores));
-                    moth_sort_recursive(pP4, pP_end, {p_min.x, p_cnr.y}, {p_cnr.x, p_max.y}, 2, moth_cdiv2(num_cores));
+                    moth_sort_recursive(pP3, pP4, {p_cnr.x, p_cnr.y}, {p_max.x, p_max.y}, 0, moth_cdiv2(threads));
+                    moth_sort_recursive(pP4, pP_end, {p_min.x, p_cnr.y}, {p_cnr.x, p_max.y}, 2, moth_cdiv2(threads));
                 });
                 break;
 
@@ -116,10 +113,10 @@ static void moth_sort_recursive(moth_p2d* pP_beg,
                         ++pP3;
                     }
                 }
-                moth_omp_tasks(num_cores >= 2, [&]() {
+                moth_omp_tasks(threads >= 2, [=]() {
                     /* Separate lower and upper quadrants of the left half
                      * and recursively process the quadrants. */
-                    pP2 = pP1;
+                    moth_p2d* pP2 = pP1;
                     for (moth_p2d* pP2_end{pP3}; pP2 != pP2_end;) {
                         if (pP2->y > p_cnr.y) {
                             std::swap(*pP2, *--pP2_end);
@@ -127,12 +124,12 @@ static void moth_sort_recursive(moth_p2d* pP_beg,
                             ++pP2;
                         }
                     }
-                    moth_sort_recursive(pP1, pP2, {p_min.x, p_min.y}, {p_cnr.x, p_cnr.y}, 0, moth_fdiv2(num_cores));
-                    moth_sort_recursive(pP2, pP3, {p_min.x, p_cnr.y}, {p_cnr.x, p_max.y}, 1, moth_fdiv2(num_cores));
-                }, [&]() {
+                    moth_sort_recursive(pP1, pP2, {p_min.x, p_min.y}, {p_cnr.x, p_cnr.y}, 0, moth_fdiv2(threads));
+                    moth_sort_recursive(pP2, pP3, {p_min.x, p_cnr.y}, {p_cnr.x, p_max.y}, 1, moth_fdiv2(threads));
+                }, [=]() {
                     /* Separate upper and lower quadrants of the right half
                      * and recursively process the quadrants. */
-                    pP4 = pP3;
+                    moth_p2d* pP4 = pP3;
                     for (moth_p2d* pP4_end{pP_end}; pP4 != pP4_end;) {
                         if (pP4->y < p_cnr.y) {
                             std::swap(*pP4, *--pP4_end);
@@ -140,8 +137,8 @@ static void moth_sort_recursive(moth_p2d* pP_beg,
                             ++pP4;
                         }
                     }
-                    moth_sort_recursive(pP3, pP4, {p_cnr.x, p_cnr.y}, {p_max.x, p_max.y}, 1, moth_cdiv2(num_cores));
-                    moth_sort_recursive(pP4, pP_end, {p_cnr.x, p_min.y}, {p_max.x, p_cnr.y}, 3, moth_cdiv2(num_cores));
+                    moth_sort_recursive(pP3, pP4, {p_cnr.x, p_cnr.y}, {p_max.x, p_max.y}, 1, moth_cdiv2(threads));
+                    moth_sort_recursive(pP4, pP_end, {p_cnr.x, p_min.y}, {p_max.x, p_cnr.y}, 3, moth_cdiv2(threads));
                 });
                 break;
 
@@ -157,10 +154,10 @@ static void moth_sort_recursive(moth_p2d* pP_beg,
                         ++pP3;
                     }
                 }
-                moth_omp_tasks(num_cores >= 2, [&]() {
+                moth_omp_tasks(threads >= 2, [=]() {
                     /* Separate upper and lower quadrants of the right half
                      * and recursively process the quadrants. */
-                    pP2 = pP1;
+                    moth_p2d* pP2 = pP1;
                     for (moth_p2d* pP2_end{pP3}; pP2 != pP2_end;) {
                         if (pP2->y < p_cnr.y) {
                             std::swap(*pP2, *--pP2_end);
@@ -168,12 +165,12 @@ static void moth_sort_recursive(moth_p2d* pP_beg,
                             ++pP2;
                         }
                     }
-                    moth_sort_recursive(pP1, pP2, {p_cnr.x, p_cnr.y}, {p_max.x, p_max.y}, 3, moth_fdiv2(num_cores));
-                    moth_sort_recursive(pP2, pP3, {p_cnr.x, p_min.y}, {p_max.x, p_cnr.y}, 2, moth_fdiv2(num_cores));
-                }, [&]() {
+                    moth_sort_recursive(pP1, pP2, {p_cnr.x, p_cnr.y}, {p_max.x, p_max.y}, 3, moth_fdiv2(threads));
+                    moth_sort_recursive(pP2, pP3, {p_cnr.x, p_min.y}, {p_max.x, p_cnr.y}, 2, moth_fdiv2(threads));
+                }, [=]() {
                     /* Separate lower and upper quadrants of the left half
                      * and recursively process the quadrants. */
-                    pP4 = pP3;
+                    moth_p2d* pP4 = pP3;
                     for (moth_p2d* pP4_end{pP_end}; pP4 != pP4_end;) {
                         if (pP4->y > p_cnr.y) {
                             std::swap(*pP4, *--pP4_end);
@@ -181,8 +178,8 @@ static void moth_sort_recursive(moth_p2d* pP_beg,
                             ++pP4;
                         }
                     }
-                    moth_sort_recursive(pP3, pP4, {p_min.x, p_min.y}, {p_cnr.x, p_cnr.y}, 2, moth_cdiv2(num_cores));
-                    moth_sort_recursive(pP4, pP_end, {p_min.x, p_cnr.y}, {p_cnr.x, p_max.y}, 0, moth_cdiv2(num_cores));
+                    moth_sort_recursive(pP3, pP4, {p_min.x, p_min.y}, {p_cnr.x, p_cnr.y}, 2, moth_cdiv2(threads));
+                    moth_sort_recursive(pP4, pP_end, {p_min.x, p_cnr.y}, {p_cnr.x, p_max.y}, 0, moth_cdiv2(threads));
                 });
                 break;
 
@@ -198,10 +195,10 @@ static void moth_sort_recursive(moth_p2d* pP_beg,
                         ++pP3;
                     }
                 }
-                moth_omp_tasks(num_cores >= 2, [&]() {
+                moth_omp_tasks(threads >= 2, [=]() {
                     /* Separate left and right quadrants of the upper half
                      * and recursively process the quadrants. */
-                    pP2 = pP1;
+                    moth_p2d* pP2 = pP1;
                     for (moth_p2d* pP2_end{pP3}; pP2 != pP2_end;) {
                         if (pP2->x < p_cnr.x) {
                             std::swap(*pP2, *--pP2_end);
@@ -209,12 +206,12 @@ static void moth_sort_recursive(moth_p2d* pP_beg,
                             ++pP2;
                         }
                     }
-                    moth_sort_recursive(pP1, pP2, {p_cnr.x, p_cnr.y}, {p_max.x, p_max.y}, 2, moth_fdiv2(num_cores));
-                    moth_sort_recursive(pP2, pP3, {p_min.x, p_cnr.y}, {p_cnr.x, p_max.y}, 3, moth_fdiv2(num_cores));
-                }, [&]() {
+                    moth_sort_recursive(pP1, pP2, {p_cnr.x, p_cnr.y}, {p_max.x, p_max.y}, 2, moth_fdiv2(threads));
+                    moth_sort_recursive(pP2, pP3, {p_min.x, p_cnr.y}, {p_cnr.x, p_max.y}, 3, moth_fdiv2(threads));
+                }, [=]() {
                     /* Separate right and left quadrants of the lower half
                      * and recursively process the quadrants. */
-                    pP4 = pP3;
+                    moth_p2d* pP4 = pP3;
                     for (moth_p2d* pP4_end{pP_end}; pP4 != pP4_end;) {
                         if (pP4->x > p_cnr.x) {
                             std::swap(*pP4, *--pP4_end);
@@ -222,8 +219,8 @@ static void moth_sort_recursive(moth_p2d* pP_beg,
                             ++pP4;
                         }
                     }
-                    moth_sort_recursive(pP3, pP4, {p_min.x, p_min.y}, {p_cnr.x, p_cnr.y}, 3, moth_cdiv2(num_cores));
-                    moth_sort_recursive(pP4, pP_end, {p_cnr.x, p_min.y}, {p_max.x, p_cnr.y}, 1, moth_cdiv2(num_cores));
+                    moth_sort_recursive(pP3, pP4, {p_min.x, p_min.y}, {p_cnr.x, p_cnr.y}, 3, moth_cdiv2(threads));
+                    moth_sort_recursive(pP4, pP_end, {p_cnr.x, p_min.y}, {p_max.x, p_cnr.y}, 1, moth_cdiv2(threads));
                 });
                 break;
 
