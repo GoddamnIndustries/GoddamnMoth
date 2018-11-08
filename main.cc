@@ -57,7 +57,7 @@ int main()
     points.reserve(100000000);
 
     for (moth_size_t m = 0; m < 10; ++m) {
-        for (moth_size_t k = 0; k < 1000000; ++k) {
+        for (moth_size_t k = 0; k < 10000000; ++k) {
             moth_p2d p{uniform_distribution(random_engine),
                        uniform_distribution(random_engine)};
             points.push_back(p);
