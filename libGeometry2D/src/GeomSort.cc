@@ -260,7 +260,7 @@ void moth_sort(moth_p2d* pP_beg, moth_p2d* pP_end)
             }
         }
 #else
-        moth_sort_recursive(pP_beg, pP_end, p_min, p_max);
+        moth_sort_recursive(pP_beg, pP_end, p_min, p_max, 1, 1);
 #endif
     }
 #if 0
