@@ -24,6 +24,8 @@ struct moth_mesh2d_triangle_iter;
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
+extern int cnt;
+
 /**
  * Triangle cell.
  */
@@ -33,7 +35,7 @@ public:
     moth_size_t nP1{MOTH_NPOS}, nP2{MOTH_NPOS}, nP3{MOTH_NPOS};
     moth_size_t nT1{MOTH_NPOS}, nT2{MOTH_NPOS}, nT3{MOTH_NPOS};
     bool bad{};
-    bool deleted{};
+    int mcnt{};
 
 public:
     MOTH_HOST MOTH_DEVICE
@@ -245,11 +247,21 @@ public:
     {
         return pTriangles[nT].bad;
     }
+    MOTH_HOST
+    int& vvis()
+    {
+        return pTriangles[nT].mcnt;
+    }
 
     MOTH_HOST
-    bool& ddel()
+    bool visited() const
     {
-        return pTriangles[nT].deleted;
+        return invalid() && (pTriangles[nT].mcnt >= cnt);
+    }
+    MOTH_HOST
+    bool unvisited() const
+    {
+        return valid() && (pTriangles[nT].mcnt < cnt);
     }
 
     MOTH_HOST
@@ -297,7 +309,13 @@ public:
 
 public:
     MOTH_HOST MOTH_DEVICE
-    static void swap(moth_mesh2d_triangle_iter& pT1, moth_mesh2d_triangle_iter& pT2)
+    static void swap_assign(moth_mesh2d_triangle_iter& pT1, const moth_mesh2d_triangle_iter& pT2)
+    {
+        swap(pT1, pT2);
+        pT1 = pT2;
+    }
+    MOTH_HOST MOTH_DEVICE
+    static void swap(const moth_mesh2d_triangle_iter& pT1, const moth_mesh2d_triangle_iter& pT2)
     {
         assert(pT1.nT != MOTH_NPOS && pT2.nT != MOTH_NPOS);
         assert(pT1.pPoints == pT2.pPoints &&
@@ -401,6 +419,8 @@ public:
     {
         moth_sort(pP_beg, pP_end);
         for (moth_p2d* pP_cur = pP_beg; pP_cur != pP_end; ++pP_cur) {
+            static int lll=0;
+            if (lll++%10000==0) std::cerr << lll << std::endl;
             insert(*pP_cur);
         }
     }
@@ -424,7 +444,7 @@ public:
             if (pT->pP3 == pPoints[1]) continue;
             if (pT->pP3 == pPoints[2]) continue;
 #endif
-            if (cur.ddel()) continue;
+            //if (cur.vvis()) continue;
 
             file << *cur.point(1) << std::endl
                  << *cur.point(2) << std::endl

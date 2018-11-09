@@ -49,7 +49,7 @@ int main()
     moth_sort(points.data(), points.data() + points.size());
 #endif
 
-#if 1
+#if 0
     std::default_random_engine random_engine;
     std::uniform_real_distribution<moth_real_t> uniform_distribution(-1.0, 1.0);
 
@@ -76,9 +76,9 @@ int main()
 
     DT::moth_mesh2d builder;
 
-    for (moth_size_t m = 0; m < 1; ++m) {
+    for (moth_size_t m = 0; m < 10; ++m) {
         auto c = clock();
-        for (moth_size_t k = 0; k < 100; ++k) {
+        for (moth_size_t k = 0; k < 10000; ++k) {
             moth_p2d p{uniform_distribution(random_engine),
                        uniform_distribution(random_engine)};
             builder.insert(p);
@@ -90,7 +90,7 @@ int main()
     builder.print();
 #endif
 
-#if 0
+#if 1
     std::default_random_engine random_engine;
     std::uniform_real_distribution<moth_real_t> uniform_distribution(-1.0, 1.0);
 
@@ -100,7 +100,7 @@ int main()
 
     for (moth_size_t m = 0; m < 1; ++m) {
         points.clear();
-        for (moth_size_t k = 0; k < 100; ++k) {
+        for (moth_size_t k = 0; k < 1000000; ++k) {
             moth_p2d p{uniform_distribution(random_engine),
                        uniform_distribution(random_engine)};
             points.push_back(p);

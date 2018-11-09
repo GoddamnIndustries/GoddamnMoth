@@ -1,12 +1,16 @@
 #include "libGeometry2D/src/GeomSort.hh"
 
 #include <fstream>
-#include <omp.h>
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
+#if defined(_OPENMP)
 #define MOTH_OMP 1
+#include <omp.h>
+#else
+#define MOTH_OMP 0
+#endif
 
 MOTH_HOST MOTH_CORE
 template<typename moth_task1_t, typename moth_task2_t>
@@ -33,7 +37,11 @@ inline void moth_omp_tasks(bool cond, moth_task1_t&& task1,
 MOTH_HOST MOTH_CORE
 inline moth_size_t moth_omp_get_num_threads()
 {
+#if MOTH_OMP
     return static_cast<moth_size_t>(omp_get_num_threads());
+#else
+    return 1;
+#endif
 }
 
 // ------------------------------------------------------------------------------------ //
@@ -261,6 +269,7 @@ static void moth_sort_recursive(moth_p2d* pP_beg,
                             ++pP4;
                         }
                     }
+
                     moth_size_t nThreads2 = moth_cdiv2(nThreads);
                     moth_omp_tasks(nThreads2 >= 2, [=]() {
                         moth_size_t nThreads4 = moth_fdiv2(nThreads2);
@@ -298,7 +307,7 @@ void moth_sort(moth_p2d* pP_beg, moth_p2d* pP_end)
         }
 
         /* Perform the sort. */
-#if MOTH_OMP
+#if MOTH_OMP&&0
 #pragma omp parallel
         {
 #pragma omp single nowait
