@@ -100,7 +100,7 @@ int main()
 
     for (moth_size_t m = 0; m < 1; ++m) {
         points.clear();
-        for (moth_size_t k = 0; k < 1000000; ++k) {
+        for (moth_size_t k = 0; k < 10000000; ++k) {
             moth_p2d p{uniform_distribution(random_engine),
                        uniform_distribution(random_engine)};
             points.push_back(p);
@@ -111,7 +111,7 @@ int main()
         c = clock() - c;
         std::cerr << m + 1 << " " << moth_real_t(c) / CLOCKS_PER_SEC << std::endl;
     }
-    builder.print();
+    //builder.print();
 #endif
 
 #if 0
@@ -144,38 +144,6 @@ int main()
     builder.tri_edges = E;
     builder.refine();
     builder.print();
-#endif
-
-#if 0
-    std::vector<moth_p2d> P;
-    /*for (moth_size_t i = 1; i <= 5; ++i) {
-        moth_real_t r = i / 5.0;
-        for (moth_size_t j = 0; j < 20; ++j) {
-            moth_real_t phi = 2.0 * j / 20.0 * MOTH_PI;
-            moth_real_t x = r * cos(phi);
-            moth_real_t y = r * sin(phi);
-            P.push_back({x , y});
-        }
-    }*/
-    for (moth_size_t i = 0; i < 10; ++i) {
-        moth_real_t r = 5.0;
-        moth_real_t phi = 2.0 * i / 10.0 * MOTH_PI;
-        moth_real_t x = r * cos(phi);
-        moth_real_t y = r * sin(phi);
-        P.push_back({x , y});
-    }
-    //P.push_back({0,0});
-    //moth_triangulate_bowyer_watson(P);
-
-#if 0
-    std::vector<moth_e2d> E;
-    for (moth_size_t i = 0; i < P.size() - 1; ++i) {
-        E.push_back({P[i], P[i + 1]});
-    }
-    E.push_back({P.back(), P.front()});
-
-    moth_triangulate_ruppert(E);
-#endif
 #endif
 
     moth_tetrahedron T{

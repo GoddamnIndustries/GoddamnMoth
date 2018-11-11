@@ -74,7 +74,7 @@ public:
     {
     public:
         MOTH_HOST
-        static void shift(moth_mesh2d_triangle& T)
+        static void lshift(moth_mesh2d_triangle& T)
         {
             std::swap(T.nP1, T.nP2);
             std::swap(T.nP2, T.nP3);
@@ -82,9 +82,24 @@ public:
             std::swap(T.nT2, T.nT3);
         }
         MOTH_HOST template<typename T = moth_mesh2d_triangle_iter>
-        static void shift(const T& pT)
+        static void lshift(const T& pT)
         {
-            shift(pT.pTriangles[pT.nT]);
+            lshift(pT.pTriangles[pT.nT]);
+        }
+
+    public:
+        MOTH_HOST
+        static void rshift(moth_mesh2d_triangle& T)
+        {
+            std::swap(T.nP1, T.nP3);
+            std::swap(T.nP2, T.nP3);
+            std::swap(T.nT1, T.nT3);
+            std::swap(T.nT2, T.nT3);
+        }
+        MOTH_HOST template<typename T = moth_mesh2d_triangle_iter>
+        static void rshift(const T& pT)
+        {
+            rshift(pT.pTriangles[pT.nT]);
         }
     };  // struct moth_mesh2d_utils
 
@@ -309,54 +324,46 @@ public:
 
 public:
     MOTH_HOST MOTH_DEVICE
-    static void swap_assign(moth_mesh2d_triangle_iter& pT1, const moth_mesh2d_triangle_iter& pT2)
-    {
-        swap(pT1, pT2);
-        pT1 = pT2;
-    }
-    MOTH_HOST MOTH_DEVICE
     static void swap(const moth_mesh2d_triangle_iter& pT1, const moth_mesh2d_triangle_iter& pT2)
     {
         assert(pT1.nT != MOTH_NPOS && pT2.nT != MOTH_NPOS);
         assert(pT1.pPoints == pT2.pPoints &&
                pT1.pTriangles == pT2.pTriangles);
         if (pT1 != pT2) {
-            moth_mesh2d_triangle& T1{pT1.pTriangles[pT1.nT]};
-            moth_mesh2d_triangle& T2{pT2.pTriangles[pT2.nT]};
-
-            /* @todo Rewrite this without using additional vector. */
-            std::vector<moth_size_t*> pnT_neighbors;
-            pnT_neighbors.reserve(9);
+            moth_size_t* pnT_neighbors[6]{};
+            moth_size_t** pnT_neighbors_end = pnT_neighbors;
 
             /* Find neighbors of the first triangle. */
+            moth_mesh2d_triangle& T1{pT1.pTriangles[pT1.nT]};
             for (moth_size_t k = 1; k <= 3; ++k) {
                 if (T1.nnT(k) != MOTH_NPOS) {
                     moth_mesh2d_triangle& T1_k{pT1.pTriangles[T1.nnT(k)]};
                     for (moth_size_t m = 1; m <= 3; ++m) {
                         if (T1_k.nnT(m) == pT1.nT) {
-                            pnT_neighbors.push_back(&T1_k.nnT(m));
+                            *(pnT_neighbors_end++) = &T1_k.nnT(m);
                             break;
                         }
                     }
                 }
             }
             /* Find neighbors of the second triangle. */
+            moth_mesh2d_triangle& T2{pT2.pTriangles[pT2.nT]};
             for (moth_size_t k = 1; k <= 3; ++k) {
                 if (T2.nnT(k) != MOTH_NPOS) {
                     moth_mesh2d_triangle& T2_k{pT2.pTriangles[T2.nnT(k)]};
                     for (moth_size_t m = 1; m <= 3; ++m) {
                         if (T2_k.nnT(m) == pT2.nT) {
-                            pnT_neighbors.push_back(&T2_k.nnT(m));
+                            *(pnT_neighbors_end++) = &T2_k.nnT(m);
                             break;
                         }
                     }
                 }
             }
 
-            /* Find only unique neighbors and relink them. */
-            std::sort(pnT_neighbors.begin(), pnT_neighbors.end());
-            pnT_neighbors.erase(std::unique(pnT_neighbors.begin(), pnT_neighbors.end()), pnT_neighbors.end());
-            for (moth_size_t* pnT : pnT_neighbors) {
+            /* Relink the neighbors. */
+            for (moth_size_t** pnT_neighbors_cur = pnT_neighbors;
+                               pnT_neighbors_cur != pnT_neighbors_end; ++pnT_neighbors_cur) {
+                moth_size_t* pnT = *pnT_neighbors_cur;
                 if (*pnT == pT1.nT) {
                     *pnT = pT2.nT;
                 } else if (*pnT == pT2.nT) {
@@ -370,6 +377,12 @@ public:
             /* And finally swap the memory. */
             std::swap(pT1.pTriangles[pT1.nT], pT2.pTriangles[pT2.nT]);
         }
+    }
+    MOTH_HOST MOTH_DEVICE
+    static void swap_assign(moth_mesh2d_triangle_iter& pT1, const moth_mesh2d_triangle_iter& pT2)
+    {
+        swap(pT1, pT2);
+        pT1 = pT2;
     }
 };  // struct moth_mesh2d_triangle_iter
 
@@ -386,7 +399,7 @@ struct MOTH_CORE moth_mesh2d
 
 public:
     MOTH_HOST
-    moth_mesh2d(moth_size_t capacity = 10000000)
+    moth_mesh2d(moth_size_t capacity = 100000000)
     {
         /* Add super triangle points. */
         pPoints.reserve(2 * capacity);
@@ -419,8 +432,8 @@ public:
     {
         moth_sort(pP_beg, pP_end);
         for (moth_p2d* pP_cur = pP_beg; pP_cur != pP_end; ++pP_cur) {
-            static int lll=0;
-            if (lll++%10000==0) std::cerr << lll << std::endl;
+            //static int lll=0;
+            //if (lll++%10000==0) std::cerr << lll << std::endl;
             insert(*pP_cur);
         }
     }
@@ -431,8 +444,11 @@ public:
         std::string file_path("res/tr-" + std::to_string(99999) + ".txt");
         std::ofstream file(file_path);
 
+        static int k=0;
+
         for (moth_mesh2d_triangle_iter cur = triangle_begin(),
                                        end = triangle_end(); cur != end; ++cur) {
+            if (k++%1000==0) std::cerr << k << std::endl;
 #if 0
             if (pT->pP1 == pPoints[0]) continue;
             if (pT->pP1 == pPoints[1]) continue;

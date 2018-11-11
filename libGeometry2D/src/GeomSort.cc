@@ -307,7 +307,7 @@ void moth_sort(moth_p2d* pP_beg, moth_p2d* pP_end)
         }
 
         /* Perform the sort. */
-#if MOTH_OMP&&0
+#if MOTH_OMP
 #pragma omp parallel
         {
 #pragma omp single nowait
