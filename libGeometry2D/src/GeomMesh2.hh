@@ -276,7 +276,13 @@ public:
     MOTH_HOST
     bool unvisited() const
     {
-        return valid() && (pTriangles[nT].mcnt < cnt);
+        bool unv{valid() && (pTriangles[nT].mcnt < cnt)};
+        if (unv) {
+            pTriangles[nT].mcnt = cnt;
+            return true;
+        } else {
+            return false;
+        }
     }
 
     MOTH_HOST

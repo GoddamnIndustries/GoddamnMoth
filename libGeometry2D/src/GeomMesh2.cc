@@ -21,10 +21,10 @@ void DT::moth_mesh2d::insert(const moth_p2d& p1, moth_real_t eps)
     /* Find first bad triangle, reach first bad border triangle and
      * proceed to walk-around it by using the connectivity -- ~O(log(n)). */
     moth_mesh2d_triangle_iter pT_bad = triangle_end();
-    for (moth_mesh2d_triangle_iter pT_cur = pT_bad - 1;
+    for (moth_mesh2d_triangle_iter pT_cur{pT_bad - 1};
                                    pT_cur != pT_bad; --pT_cur) {
         pT_cur.bbad() = moth_triangle2d::circle(*pT_cur, *pP);
-        pT_cur.vvis() = cnt;
+        pT_cur.unvisited();
         if (pT_cur.good()) {
             continue;
         }
@@ -37,7 +37,6 @@ void DT::moth_mesh2d::insert(const moth_p2d& p1, moth_real_t eps)
             /* Check neighbors of the bad triangle,
              * also moving bad ones to the end. */
             if (pT_cur.triangle(1).unvisited()) {
-                pT_cur.triangle(1).vvis() = cnt;
                 pT_cur.triangle(1).bbad() = moth_triangle2d::circle(*pT_cur.triangle(1), *pP);
                 if (pT_cur.triangle(1).bad()) {
                     moth_mesh2d_triangle_iter::swap(pT_cur.triangle(1), --pT_bad);
@@ -48,7 +47,6 @@ void DT::moth_mesh2d::insert(const moth_p2d& p1, moth_real_t eps)
             }
 
             if (pT_cur.triangle(2).unvisited()) {
-                pT_cur.triangle(2).vvis() = cnt;
                 pT_cur.triangle(2).bbad() = moth_triangle2d::circle(*pT_cur.triangle(2), *pP);
                 if (pT_cur.triangle(2).bad()) {
                     moth_mesh2d_triangle_iter::swap(pT_cur.triangle(2), --pT_bad);
@@ -62,7 +60,6 @@ void DT::moth_mesh2d::insert(const moth_p2d& p1, moth_real_t eps)
             }
 
             if (pT_cur.triangle(3).unvisited()) {
-                pT_cur.triangle(3).vvis() = cnt;
                 pT_cur.triangle(3).bbad() = moth_triangle2d::circle(*pT_cur.triangle(3), *pP);
                 if (pT_cur.triangle(3).bad()) {
                     moth_mesh2d_triangle_iter::swap(pT_cur.triangle(3), --pT_bad);
@@ -124,7 +121,6 @@ void DT::moth_mesh2d::insert(const moth_p2d& p1, moth_real_t eps)
             /* Check the second neighbor of the bad triangle,
              * also moving bad it to the end, if it is bad. */
             if (pT_cur.triangle(2).unvisited()) {
-                pT_cur.triangle(2).vvis() = cnt;
                 pT_cur.triangle(2).bbad() = moth_triangle2d::circle(*pT_cur.triangle(2), *pP);
                 if (pT_cur.triangle(2).bad()) {
                     moth_mesh2d_triangle_iter::swap(pT_cur.triangle(2), --pT_bad);
@@ -142,10 +138,7 @@ void DT::moth_mesh2d::insert(const moth_p2d& p1, moth_real_t eps)
                 }
                 pT_cur = pT_cur.triangle(2);
                 while (true) {
-                    /* Check the first neighbor of the bad triangle,
-                     * also moving bad it to the end, if it is bad. */
                     if (pT_cur.triangle(1).unvisited()) {
-                        pT_cur.triangle(1).vvis() = cnt;
                         pT_cur.triangle(1).bbad() = moth_triangle2d::circle(*pT_cur.triangle(1), *pP);
                         if (pT_cur.triangle(1).bad()) {
                             moth_mesh2d_triangle_iter::swap(pT_cur.triangle(1), --pT_bad);
@@ -167,8 +160,8 @@ void DT::moth_mesh2d::insert(const moth_p2d& p1, moth_real_t eps)
 
     /* Walk through bad triangles, move them to the end
      * and delete -- ~O(log(n)). */
-    for (moth_mesh2d_triangle_iter pT_cur = pT_bad, pT_end = triangle_end();
-         pT_cur != pT_end; ++pT_cur) {
+    for (moth_mesh2d_triangle_iter pT_cur{pT_bad}, pT_end{triangle_end()};
+                                   pT_cur != pT_end; ++pT_cur) {
         if (pT_cur.bad()) {
             moth_mesh2d_triangle_iter::swap(pT_cur, --pT_end);
             pTriangles.pop_back();
