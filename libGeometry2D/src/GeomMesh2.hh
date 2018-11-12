@@ -70,39 +70,6 @@ public:
     }
 };  // struct moth_mesh2d_triangle
 
-    struct MOTH_CORE moth_mesh2d_utils
-    {
-    public:
-        MOTH_HOST
-        static void lshift(moth_mesh2d_triangle& T)
-        {
-            std::swap(T.nP1, T.nP2);
-            std::swap(T.nP2, T.nP3);
-            std::swap(T.nT1, T.nT2);
-            std::swap(T.nT2, T.nT3);
-        }
-        MOTH_HOST template<typename T = moth_mesh2d_triangle_iter>
-        static void lshift(const T& pT)
-        {
-            lshift(pT.pTriangles[pT.nT]);
-        }
-
-    public:
-        MOTH_HOST
-        static void rshift(moth_mesh2d_triangle& T)
-        {
-            std::swap(T.nP1, T.nP3);
-            std::swap(T.nP2, T.nP3);
-            std::swap(T.nT1, T.nT3);
-            std::swap(T.nT2, T.nT3);
-        }
-        MOTH_HOST template<typename T = moth_mesh2d_triangle_iter>
-        static void rshift(const T& pT)
-        {
-            rshift(pT.pTriangles[pT.nT]);
-        }
-    };  // struct moth_mesh2d_utils
-
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
@@ -326,6 +293,26 @@ public:
         assert(pT.pPoints == pPoints &&
                pT.pTriangles == pTriangles);
         pTriangles[nT].nnT(k) = pT.nT;
+    }
+
+public:
+    MOTH_HOST
+    static void lshift(const moth_mesh2d_triangle_iter& pT)
+    {
+        moth_mesh2d_triangle& T{pT.pTriangles[pT.nT]};
+        std::swap(T.nP1, T.nP2);
+        std::swap(T.nP2, T.nP3);
+        std::swap(T.nT1, T.nT2);
+        std::swap(T.nT2, T.nT3);
+    }
+    MOTH_HOST
+    static void rshift(const moth_mesh2d_triangle_iter& pT)
+    {
+        moth_mesh2d_triangle& T{pT.pTriangles[pT.nT]};
+        std::swap(T.nP1, T.nP3);
+        std::swap(T.nP2, T.nP3);
+        std::swap(T.nT1, T.nT3);
+        std::swap(T.nT2, T.nT3);
     }
 
 public:

@@ -55,7 +55,7 @@ void DT::moth_mesh2d::insert(const moth_p2d& p1, moth_real_t eps)
             if (pT_cur.triangle(2).good()) {
                 /* Presort the triangle to start the walk-around:
                  * make a border oppose the first point. */
-                moth_mesh2d_utils::lshift(pT_cur);
+                moth_mesh2d_triangle_iter::lshift(pT_cur);
                 break;
             }
 
@@ -68,7 +68,7 @@ void DT::moth_mesh2d::insert(const moth_p2d& p1, moth_real_t eps)
             if (pT_cur.triangle(3).good()) {
                 /* Presort the triangle to start the walk-around:
                  * make a border oppose the first point. */
-                moth_mesh2d_utils::rshift(pT_cur);
+                moth_mesh2d_triangle_iter::rshift(pT_cur);
                 break;
             }
 
@@ -76,7 +76,7 @@ void DT::moth_mesh2d::insert(const moth_p2d& p1, moth_real_t eps)
              * we aren't going for a loop and move on to the next
              * neighbor. */
             if (pT_cur.triangle(1).triangle(1) == pT_cur) {
-                moth_mesh2d_utils::lshift(pT_cur.triangle(1));
+                moth_mesh2d_triangle_iter::lshift(pT_cur.triangle(1));
             }
             pT_cur = pT_cur.triangle(1);
         }
@@ -100,7 +100,7 @@ void DT::moth_mesh2d::insert(const moth_p2d& p1, moth_real_t eps)
                 /* Link the triangle with the outer neighbor.
                  * ( The outer triangle may not be presorted. ) */
                 while (pT_cur.point(2) != pT_cur.triangle(1).point(3)) {
-                    moth_mesh2d_utils::lshift(pT_cur.triangle(1));
+                    moth_mesh2d_triangle_iter::lshift(pT_cur.triangle(1));
                 }
                 pT_cur.triangle(1).set_triangle(1, pT_new);
                 pT_new.set_triangle(1, pT_cur.triangle(1));
@@ -118,23 +118,20 @@ void DT::moth_mesh2d::insert(const moth_p2d& p1, moth_real_t eps)
                 break;
             }
 
-            /* Check the second neighbor of the bad triangle,
-             * also moving bad it to the end, if it is bad. */
+            /* Carefully proceed to the new edge:
+             * if possible, rotate the current triangle, otherwise select the
+             * new triangle with edge CCW continuation. */
             if (pT_cur.triangle(2).unvisited()) {
                 pT_cur.triangle(2).bbad() = moth_triangle2d::circle(*pT_cur.triangle(2), *pP);
                 if (pT_cur.triangle(2).bad()) {
                     moth_mesh2d_triangle_iter::swap(pT_cur.triangle(2), --pT_bad);
                 }
             }
-
-            /* Carefully proceed to the new edge:
-             * if possible, rotate the current triangle, otherwise select the
-             * new triangle with edge CCW continuation. */
             if (pT_cur.triangle(2).good()) {
-                moth_mesh2d_utils::lshift(pT_cur);
+                moth_mesh2d_triangle_iter::lshift(pT_cur);
             } else {
                 while (pT_cur.point(1) != pT_cur.triangle(2).point(1)) {
-                    moth_mesh2d_utils::lshift(pT_cur.triangle(2));
+                    moth_mesh2d_triangle_iter::lshift(pT_cur.triangle(2));
                 }
                 pT_cur = pT_cur.triangle(2);
                 while (true) {
@@ -146,7 +143,7 @@ void DT::moth_mesh2d::insert(const moth_p2d& p1, moth_real_t eps)
                     }
                     if (pT_cur.triangle(1).bad()) {
                         while (pT_cur.point(3) != pT_cur.triangle(1).point(1)) {
-                            moth_mesh2d_utils::lshift(pT_cur.triangle(1));
+                            moth_mesh2d_triangle_iter::lshift(pT_cur.triangle(1));
                         }
                         pT_cur = pT_cur.triangle(1);
                     } else {
