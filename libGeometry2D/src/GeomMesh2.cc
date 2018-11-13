@@ -22,7 +22,7 @@ moth_mesh2d::moth_mesh2d(moth_size_t capacity)
 // ------------------------------------------------------------------------------------ //
 
 MOTH_HOST MOTH_CORE
-void moth_mesh2d::insert_unconstrained(const moth_p2d& p1, moth_real_t eps)
+moth_mesh2d_point_iter moth_mesh2d::insert_unconstrained(const moth_p2d& p1, moth_real_t eps)
 {
     /* Round-off the point. */
     moth_p2d p{p1};
@@ -181,10 +181,13 @@ void moth_mesh2d::insert_unconstrained(const moth_p2d& p1, moth_real_t eps)
             break;
         }
     }
+
+    return pP;
 }   // void moth_mesh2d::insert_unconstrained(moth_p2d)
 
 MOTH_HOST
-void moth_mesh2d::insert_unconstrained(moth_p2d* pP_beg, moth_p2d* pP_end)
+moth_mesh2d_point_iter moth_mesh2d::insert_unconstrained(moth_p2d* pP_beg,
+                                                         moth_p2d* pP_end)
 {
     /* Presort the triangle so that insertion
      * will take constant time -- ~O(n). */
@@ -194,39 +197,81 @@ void moth_mesh2d::insert_unconstrained(moth_p2d* pP_beg, moth_p2d* pP_end)
     }
 
     /* Insert the presorted triangles -- ~O(n). */
-    for (moth_p2d* pP_cur{pP_beg};
+    moth_mesh2d_point_iter pP{insert_unconstrained(*pP_beg)};
+    for (moth_p2d* pP_cur{pP_beg + 1};
                    pP_cur != pP_end; ++pP_cur) {
         insert_unconstrained(*pP_cur);
     }
+
+    return pP;
 }   // void moth_mesh2d::insert_unconstrained(moth_p2d*, moth_p2d*)
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-#if 0
-/**
- * Apply constrains to the pre-built Delaunay triangulation.
- */
 MOTH_HOST
 void moth_mesh2d::apply_constraints()
 {
-    for (moth_mesh2d_constraint_iter pC_cur{constraint_begin()},
-                                     pC_end{constraint_end()};
-                                     pC_end != pC_cur; ++pC_cur) {
+    for (moth_mesh2d_cedge_iter pE_cur{constraint_begin()}, pE_end{constraint_end()};
+                                pE_cur != pE_end; ++pE_cur) {
 
-        /* Walk around the triangles around constraint edge point
-         * and check if the constraint is met or
-         * subdivide the edge. */
-        for (moth_mesh2d_triangle_around_point_iter pT_beg{pC_cur.point(1)},
-                                                    pT_cur{pT_beg};;) {
+        /* Walk-around the first point of the constraint edge
+         * until the constraint is met or the constraint edge
+         * intersects with the edge of the triangle. */
+        moth_mesh2d_point_iter pP_cur = pE_cur.point(1);
+        moth_mesh2d_point_iter pP_end = pE_cur.point(2);
+        for (moth_mesh2d_triangle_iter pT_cur = pP_cur.triangle();;
+                                       pT_cur = pT_cur.triangle(2)) {
+            while (pP_cur != pT_cur.point(1)) {
+                moth_mesh2d_triangle_iter::lshift(pT_cur);
+            }
 
+            /* Check if the constraint was met:
+             * if not, tessellate the constraint edge by inserting
+             * the intersection point with some triangle edge. */
+            if (pT_cur.point(2) != pP_end &&
+                pT_cur.point(3) != pP_end) {
+                moth_p2d p_int{};
+                if (moth_e2d::intersect((*pT_cur).edge(1), *pE_cur, p_int)) {
+                    /* Insertion of the point on an existing edge wouldn't break
+                     * the previously applied constraints. */
+                    moth_mesh2d_point_iter pP_new{insert_unconstrained(p_int)};
 
-
-
-            if (pT_beg == ++pT_cur) {
+                    /* Tessellate the constraint edge. */
+                    pConstraints.push_back({pP_new.nP, pE_cur.point(2).nP});
+                    pE_cur.set_point(2, pP_new);
+                    ++pE_end;
+                    break;
+                }
+            } else {
                 break;
             }
         }
     }
 }   // void moth_mesh2d::apply_constraints()
-#endif
+
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
+void moth_mesh2d::refine()
+{
+    for (moth_mesh2d_triangle_iter pT_cur{triangle_begin()};
+                                   pT_cur != triangle_end(); ++pT_cur) {
+        if (pT_cur.point(1).nP <= 2) continue;
+        if (pT_cur.point(2).nP <= 2) continue;
+        if (pT_cur.point(3).nP <= 2) continue;
+
+        moth_triangle2d T{*pT_cur};
+        moth_real_t e1_l{moth_e2d::len(T.edge(1))};
+        moth_real_t e2_l{moth_e2d::len(T.edge(2))};
+        moth_real_t e3_l{moth_e2d::len(T.edge(3))};
+        moth_real_t eL{std::max(std::max(e1_l, e2_l), e3_l)};
+        moth_real_t el{std::min(std::min(e1_l, e2_l), e3_l)};
+        if (eL > 0.3 && el > 0.1) {
+            insert_unconstrained(moth_triangle2d::circumcenter(T));
+            apply_constraints();
+            break;
+        }
+    }
+}   // void moth_mesh2d::refine()
+

@@ -17,11 +17,11 @@ public:
     moth_e2d edge(moth_size_t k) const
     {
         switch (k) {
-            case 12:
+            case 3:
                 return {p1, p2};
-            case 23:
+            case 1:
                 return {p2, p3};
-            case 31:
+            case 2:
                 return {p3, p1};
             default:
                 std::abort();

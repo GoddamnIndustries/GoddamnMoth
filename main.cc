@@ -115,6 +115,35 @@ int main()
 #endif
 
 #if 0
+    /*
+    builder.insert_unconstrained({5.0, 0.0});
+    for (moth_size_t i = 1; i < 40; ++i) {
+        moth_real_t r = 5.0;
+        moth_real_t phi = 2.0 * i / 40.0 * MOTH_PI;
+        moth_real_t x = r * cos(phi);
+        moth_real_t y = r * sin(phi) + x;
+        builder.insert_unconstrained({x, y});
+        builder.pConstraints.push_back({builder.pPoints.size() - 2, builder.pPoints.size() - 1});
+    }
+    */
+
+    /*
+    builder.insert_unconstrained({-0.75, -0.75});
+    builder.insert_unconstrained({+0.75, -0.75});
+    builder.insert_unconstrained({+0.75, +0.75});
+    builder.insert_unconstrained({-0.75, +0.75});
+    builder.pConstraints.push_back({builder.pPoints.size() - 4, builder.pPoints.size() - 3});
+    builder.pConstraints.push_back({builder.pPoints.size() - 3, builder.pPoints.size() - 2});
+    builder.pConstraints.push_back({builder.pPoints.size() - 2, builder.pPoints.size() - 1});
+    builder.pConstraints.push_back({builder.pPoints.size() - 1, builder.pPoints.size() - 4});
+    builder.pConstraints.push_back({builder.pPoints.size() - 4, builder.pPoints.size() - 2});
+     */
+
+    //for (int m = 0; m < 100; ++m)
+    //builder.refine();
+#endif
+
+#if 0
     for (moth_size_t i = 0; i < 20; ++i) {
         std::cerr << i << std::endl;
         moth_real_t r = 1.0;

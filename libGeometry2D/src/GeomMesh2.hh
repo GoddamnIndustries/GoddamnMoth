@@ -19,7 +19,7 @@ struct moth_mesh2d_point_iter;
 struct moth_mesh2d_triangle;
 struct moth_mesh2d_triangle_iter;
 struct moth_mesh2d_constraint;
-struct moth_mesh2d_constraint_iter;
+struct moth_mesh2d_cedge_iter;
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -68,8 +68,27 @@ public:
     }
 };  // struct moth_mesh2d_triangle
 
-struct moth_mesh2d_constraint
+struct MOTH_CORE moth_mesh2d_constraint
 {
+    moth_size_t nP1{MOTH_NPOS}, nP2{MOTH_NPOS};
+
+public:
+    MOTH_HOST MOTH_DEVICE
+    moth_size_t& nnP(size_t k)
+    {
+        switch (k) {
+            case 1:
+                return nP1;
+            default:
+                return nP2;
+        }
+        //return *(&nP1 + (k - 1) % 3);
+    }
+    MOTH_HOST MOTH_DEVICE
+    moth_size_t nnP(size_t k) const
+    {
+        return *(&nP1 + (k - 1) % 2);
+    }
 };  // struct moth_mesh2d_constraint
 
 // ------------------------------------------------------------------------------------ //
@@ -101,12 +120,12 @@ public:
     }
 
 public:
-    MOTH_HOST template<typename T = moth_mesh2d_constraint_iter>
+    MOTH_HOST template<typename T = moth_mesh2d_cedge_iter>
     T constraint_begin()
     {
         return {*this, 0};
     }
-    MOTH_HOST template<typename T = moth_mesh2d_constraint_iter>
+    MOTH_HOST template<typename T = moth_mesh2d_cedge_iter>
     T constraint_end()
     {
         return {*this, pConstraints.size()};
@@ -114,7 +133,7 @@ public:
 
 public:
     /**
-     * Insert a single point into the mesh ignoring
+     * @brief Insert a single point into the mesh ignoring
      * previously applied constrains.
      *
      * Insertion is implemented using the Bowyer-Watson algorithm,
@@ -122,28 +141,40 @@ public:
      * Performance can be improved significantly by inserting
      * multiple points at once.
      *
+     * @returns Iterator to the inserted point.
+     *
      * @see https://en.wikipedia.org/wiki/Bowyer–Watson_algorithm
      */
     MOTH_HOST
-    void insert_unconstrained(const moth_p2d& p1, moth_real_t eps = 0.0);
+    moth_mesh2d_point_iter insert_unconstrained(const moth_p2d& p1, moth_real_t eps = 0.0);
 
     /**
-     * Insert multiple points into the mesh ignoring
+     * @brief Insert multiple points into the mesh ignoring
      * previously applied constrains.
      *
      * Insertion is implemented using the Bowyer-Watson algorithm,
      * presorting points along a Hilbert curve,
      * complexity in average is @f$ O(n) @f$.
      *
+     * @returns Iterator to the inserted point.
+     *
      * @see https://en.wikipedia.org/wiki/Bowyer–Watson_algorithm
      * @see https://en.wikipedia.org/wiki/Hilbert_curve
      */
     MOTH_HOST
-    void insert_unconstrained(moth_p2d* pP_beg, moth_p2d* pP_end);
+    moth_mesh2d_point_iter insert_unconstrained(moth_p2d* pP_beg, moth_p2d* pP_end);
 
 public:
+    /**
+     * Apply constrains to the pre-built triangulation,
+     * preserving the Delaunay property,
+     * complexity in is @f$ O(k), k @f$ is number of constraints.
+     */
     MOTH_HOST
     void apply_constraints();
+
+    MOTH_HOST
+    void refine();
 
 public:
     template<typename T = moth_mesh2d_triangle_iter>
@@ -219,7 +250,18 @@ public:
     }
 
 public:
-    moth_mesh2d_triangle_iter triangle() const;
+    template<typename T=moth_mesh2d_triangle_iter>
+    T triangle() const
+    {
+        for (T pT_cur = pMesh.triangle_begin<T>(), pT_end = pMesh.triangle_end<T>();
+               pT_cur != pT_end; ++pT_cur)
+        {
+            if (pT_cur.point(1) == *this) return pT_cur;
+            if (pT_cur.point(2) == *this) return pT_cur;
+            if (pT_cur.point(3) == *this) return pT_cur;
+        }
+        abort();
+    }
 
 public:
     MOTH_HOST MOTH_DEVICE
@@ -618,8 +660,48 @@ public:
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-struct moth_mesh2d_constraint_iter
+struct moth_mesh2d_cedge_iter
 {
+    moth_mesh2d& pMesh;
+    moth_size_t nE{MOTH_NPOS};
+
 public:
-    moth_mesh2d_point_iter point(moth_size_t k);
+    moth_mesh2d_point_iter point(moth_size_t k) const
+    {
+        return {pMesh, pMesh.pConstraints[nE].nnP(k)};
+    }
+    void set_point(moth_size_t k, moth_mesh2d_point_iter pP)
+    {
+        pMesh.pConstraints[nE].nnP(k) = pP.nP;
+    }
+
+public:
+    moth_e2d operator*() const
+    {
+        return {*point(1), *point(2)};
+    }
+
+public:
+    bool operator==(const moth_mesh2d_cedge_iter& pE) const
+    {
+        return nE == pE.nE;
+    }
+    bool operator!=(const moth_mesh2d_cedge_iter& pE) const
+    {
+        return nE != pE.nE;
+    }
+
+public:
+    moth_mesh2d_cedge_iter& operator++()
+    {
+        ++nE;
+        return *this;
+    }
+    moth_mesh2d_cedge_iter operator++(int);
+
+    moth_mesh2d_cedge_iter& operator--()
+    {
+        --nE;
+        return *this;
+    }
 };  // struct moth_mesh2d_constraint_iter
