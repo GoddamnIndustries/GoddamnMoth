@@ -9,22 +9,20 @@
 
 #include "libGeometry2D/src/GeomBase.hh"
 #include "libGeometry2D/src/GeomTriangle.hh"
-#include "libGeometry2D/src/GeomSort.hh"
+#include "libGeometry2D/src/GeomPoly.hh"
 
 //#undef assert
 //#define assert(...)
-
-namespace DT {
 
 struct moth_mesh2d_point;
 struct moth_mesh2d_point_iter;
 struct moth_mesh2d_triangle;
 struct moth_mesh2d_triangle_iter;
+struct moth_mesh2d_constraint;
+struct moth_mesh2d_constraint_iter;
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
-
-extern int cnt;
 
 /**
  * Triangle cell.
@@ -34,8 +32,8 @@ struct MOTH_CORE moth_mesh2d_triangle
 public:
     moth_size_t nP1{MOTH_NPOS}, nP2{MOTH_NPOS}, nP3{MOTH_NPOS};
     moth_size_t nT1{MOTH_NPOS}, nT2{MOTH_NPOS}, nT3{MOTH_NPOS};
+    moth_size_t nCounter{};
     bool bad{};
-    int mcnt{};
 
 public:
     MOTH_HOST MOTH_DEVICE
@@ -70,6 +68,10 @@ public:
     }
 };  // struct moth_mesh2d_triangle
 
+struct moth_mesh2d_constraint
+{
+};  // struct moth_mesh2d_constraint
+
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
@@ -80,21 +82,11 @@ struct MOTH_CORE moth_mesh2d
 {
     std::vector<moth_p2d> pPoints;
     std::vector<moth_mesh2d_triangle> pTriangles;
+    std::vector<moth_mesh2d_constraint> pConstraints;
 
 public:
     MOTH_HOST
-    moth_mesh2d(moth_size_t capacity = 100000000)
-    {
-        /* Add super triangle points. */
-        pPoints.reserve(2 * capacity);
-        pPoints.push_back({-4.0, -4.0});
-        pPoints.push_back({+4.0, -4.0});
-        pPoints.push_back({ 0.0, +4.0});
-
-        /* Add super triangle. */
-        pTriangles.reserve(capacity);
-        pTriangles.push_back({0, 1, 2});
-    }
+    moth_mesh2d(moth_size_t capacity = 100000000);
 
 public:
     MOTH_HOST template<typename T = moth_mesh2d_triangle_iter>
@@ -109,19 +101,49 @@ public:
     }
 
 public:
-    MOTH_HOST
-    void insert(const moth_p2d& p1, moth_real_t eps = 0.0);
-
-    MOTH_HOST
-    void insert(moth_p2d* pP_beg, moth_p2d* pP_end)
+    MOTH_HOST template<typename T = moth_mesh2d_constraint_iter>
+    T constraint_begin()
     {
-        moth_sort(pP_beg, pP_end);
-        for (moth_p2d* pP_cur = pP_beg; pP_cur != pP_end; ++pP_cur) {
-            //static int lll=0;
-            //if (lll++%10000==0) std::cerr << lll << std::endl;
-            insert(*pP_cur);
-        }
+        return {*this, 0};
     }
+    MOTH_HOST template<typename T = moth_mesh2d_constraint_iter>
+    T constraint_end()
+    {
+        return {*this, pConstraints.size()};
+    }
+
+public:
+    /**
+     * Insert a single point into the mesh ignoring
+     * previously applied constrains.
+     *
+     * Insertion is implemented using the Bowyer-Watson algorithm,
+     * complexity in average is @f$ O(log(n)) @f$.
+     * Performance can be improved significantly by inserting
+     * multiple points at once.
+     *
+     * @see https://en.wikipedia.org/wiki/Bowyer–Watson_algorithm
+     */
+    MOTH_HOST
+    void insert_unconstrained(const moth_p2d& p1, moth_real_t eps = 0.0);
+
+    /**
+     * Insert multiple points into the mesh ignoring
+     * previously applied constrains.
+     *
+     * Insertion is implemented using the Bowyer-Watson algorithm,
+     * presorting points along a Hilbert curve,
+     * complexity in average is @f$ O(n) @f$.
+     *
+     * @see https://en.wikipedia.org/wiki/Bowyer–Watson_algorithm
+     * @see https://en.wikipedia.org/wiki/Hilbert_curve
+     */
+    MOTH_HOST
+    void insert_unconstrained(moth_p2d* pP_beg, moth_p2d* pP_end);
+
+public:
+    MOTH_HOST
+    void apply_constraints();
 
 public:
     template<typename T = moth_mesh2d_triangle_iter>
@@ -196,6 +218,8 @@ public:
         return nP != pP.nP;
     }
 
+public:
+    moth_mesh2d_triangle_iter triangle() const;
 
 public:
     MOTH_HOST MOTH_DEVICE
@@ -208,7 +232,7 @@ public:
     {
         return nP == MOTH_NPOS;
     }
-};  // struct MOTH_CORE moth_mesh2d_point_iter
+};  // struct moth_mesh2d_point_iter
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -216,10 +240,51 @@ public:
 /**
  * Triangle cells iterator.
  */
-struct MOTH_CORE moth_mesh2d_triangle_iter final
+struct MOTH_CORE moth_mesh2d_triangle_iter
 {
     moth_mesh2d& pMesh;
     moth_size_t nT{MOTH_NPOS};
+
+public:
+    MOTH_HOST MOTH_DEVICE
+    moth_mesh2d_point_iter point(moth_size_t k) const
+    {
+        assert(nT < pMesh.pTriangles.size());
+        return {pMesh, pMesh.pTriangles[nT].nnP(k)};
+    }
+    MOTH_HOST
+    void set_point(moth_size_t k,
+                   const moth_mesh2d_point_iter& pP)
+    {
+        assert(&pP.pMesh == &pMesh && "Incompatible iterators.");
+        assert(nT < pMesh.pTriangles.size());
+        pMesh.pTriangles[nT].nnP(k) = pP.nP;
+    }
+
+public:
+    MOTH_HOST MOTH_DEVICE
+    moth_mesh2d_triangle_iter triangle(moth_size_t k) const
+    {
+        assert(nT < pMesh.pTriangles.size());
+        return {pMesh, pMesh.pTriangles[nT].nnT(k)};
+    }
+    MOTH_HOST
+    void set_triangle(moth_size_t k,
+                      const moth_mesh2d_triangle_iter& pT)
+    {
+        assert(&pT.pMesh == &pMesh && "Incompatible iterators.");
+        assert(nT < pMesh.pTriangles.size());
+        pMesh.pTriangles[nT].nnT(k) = pT.nT;
+    }
+
+public:
+    MOTH_HOST MOTH_DEVICE
+    const moth_triangle2d operator*() const
+    {
+        return {*point(1),
+                *point(2),
+                *point(3)};
+    }
 
 public:
     MOTH_HOST MOTH_DEVICE
@@ -231,8 +296,6 @@ public:
     }
 
 public:
-    /** Compare the iterators. */
-    /** @{ */
     MOTH_HOST MOTH_DEVICE
     bool operator==(const moth_mesh2d_triangle_iter& pT) const
     {
@@ -245,11 +308,8 @@ public:
         assert(&pT.pMesh == &pMesh);
         return nT != pT.nT;
     }
-    /** @} */
 
 public:
-    /** Increment the iterator. */
-    /** @{ */
     MOTH_HOST MOTH_DEVICE
     moth_mesh2d_triangle_iter& operator++()
     {
@@ -264,10 +324,7 @@ public:
         ++*this;
         return copy;
     }
-    /** @} */
 
-    /** Decrement the iterator. */
-    /** @{ */
     MOTH_HOST MOTH_DEVICE
     moth_mesh2d_triangle_iter& operator--()
     {
@@ -282,11 +339,8 @@ public:
         --*this;
         return copy;
     }
-    /** @} */
 
 public:
-    /** Advance the iterator forward. */
-    /** @{ */
     MOTH_HOST MOTH_DEVICE
     moth_mesh2d_triangle_iter& operator+=(moth_diff_t d)
     {
@@ -300,10 +354,7 @@ public:
         moth_mesh2d_triangle_iter copy{*this};
         return copy += d;
     }
-    /** @} */
 
-    /** Advance the iterator backward. */
-    /** @{ */
     MOTH_HOST MOTH_DEVICE
     moth_mesh2d_triangle_iter& operator-=(moth_diff_t d)
     {
@@ -316,85 +367,6 @@ public:
     {
         moth_mesh2d_triangle_iter copy{*this};
         return copy -= d;
-    }
-    /** @} */
-
-public:
-    /** Dereference the iterator. */
-    MOTH_HOST MOTH_DEVICE
-    const moth_triangle2d operator*() const
-    {
-        return {*point(1), *point(2), *point(3)};
-    }
-
-public:
-    MOTH_HOST MOTH_DEVICE
-    moth_mesh2d_point_iter point(size_t k) const
-    {
-        assert(nT < pMesh.pTriangles.size());
-        return {pMesh, pMesh.pTriangles[nT].nnP(k)};
-    }
-    MOTH_HOST
-    void set_point(size_t k, const moth_mesh2d_point_iter& pP)
-    {
-        assert(&pP.pMesh == &pMesh && "Incompatible iterators.");
-        assert(nT < pMesh.pTriangles.size());
-        pMesh.pTriangles[nT].nnP(k) = pP.nP;
-    }
-
-public:
-    MOTH_HOST MOTH_DEVICE
-    moth_mesh2d_triangle_iter triangle(size_t k) const
-    {
-        assert(nT < pMesh.pTriangles.size());
-        return {pMesh, pMesh.pTriangles[nT].nnT(k)};
-    }
-    MOTH_HOST
-    void set_triangle(size_t k, const moth_mesh2d_triangle_iter& pT)
-    {
-        assert(&pT.pMesh == &pMesh && "Incompatible iterators.");
-        assert(nT < pMesh.pTriangles.size());
-        pMesh.pTriangles[nT].nnT(k) = pT.nT;
-    }
-
-public:
-    MOTH_HOST MOTH_DEVICE
-    bool valid() const
-    {
-        return nT != MOTH_NPOS;
-    }
-    MOTH_HOST MOTH_DEVICE
-    bool invalid() const
-    {
-        return nT == MOTH_NPOS;
-    }
-
-    MOTH_HOST
-    bool not_visited()
-    {
-        if (valid() && (pMesh.pTriangles[nT].mcnt < cnt)) {
-            pMesh.pTriangles[nT].mcnt = cnt;
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    MOTH_HOST
-    bool bad() const
-    {
-        return valid() && pMesh.pTriangles[nT].bad;
-    }
-    MOTH_HOST
-    void set_bad(bool b)
-    {
-        assert(nT < pMesh.pTriangles.size());
-        pMesh.pTriangles[nT].bad = b;
-    }
-    MOTH_HOST
-    bool good()
-    {
-        return invalid() || !pMesh.pTriangles[nT].bad;
     }
 
 public:
@@ -420,9 +392,11 @@ public:
     }
 
 public:
-    /* Swap triangles. */
+    /**
+     * Safely swap two triangles. */
     MOTH_HOST
-    static void swap(const moth_mesh2d_triangle_iter& pT1, const moth_mesh2d_triangle_iter& pT2)
+    static void swap(const moth_mesh2d_triangle_iter& pT1,
+                     const moth_mesh2d_triangle_iter& pT2)
     {
         assert(pT1.nT != MOTH_NPOS && pT2.nT != MOTH_NPOS);
         assert(&pT1.pMesh == &pT2.pMesh && "Incompatible iterators.");
@@ -458,7 +432,7 @@ public:
             }
 
             /* Relink the neighbors. */
-            for (moth_size_t** pnT_neighbors_cur = pnT_neighbors;
+            for (moth_size_t** pnT_neighbors_cur{pnT_neighbors};
                                pnT_neighbors_cur != pnT_neighbors_end; ++pnT_neighbors_cur) {
                 moth_size_t* pnT = *pnT_neighbors_cur;
                 if (*pnT == pT1.nT) {
@@ -469,15 +443,183 @@ public:
             }
 
             /* And finally swap the memory. */
-            std::swap(pT1.pMesh.pTriangles[pT1.nT], pT2.pMesh.pTriangles[pT2.nT]);
+            std::swap(pT1.pMesh.pTriangles[pT1.nT],
+                      pT2.pMesh.pTriangles[pT2.nT]);
         }
     }
+
     MOTH_HOST MOTH_DEVICE
     static void swap_assign(moth_mesh2d_triangle_iter& pT1, const moth_mesh2d_triangle_iter& pT2)
     {
         swap(pT1, pT2);
         pT1 = pT2;
     }
+
+public:
+    /** Check if iterator is valid. */
+    /** @{ */
+    MOTH_HOST MOTH_DEVICE
+    bool valid() const
+    {
+        return nT != MOTH_NPOS;
+    }
+    MOTH_HOST MOTH_DEVICE
+    bool invalid() const
+    {
+        return nT == MOTH_NPOS;
+    }
+    /** @} */
+
+public:
+    /**
+     * Check if triangle is bad or good.
+     * Invalid iterators implicitly are treated as good. */
+    /** @{ */
+    MOTH_HOST
+    bool bad() const
+    {
+        return valid() && pMesh.pTriangles[nT].bad;
+    }
+    MOTH_HOST
+    bool good() const
+    {
+        return invalid() || !pMesh.pTriangles[nT].bad;
+    }
+    /** @} */
+
+    /** Mark the triangle bad. */
+    MOTH_HOST
+    void set_bad(bool b)
+    {
+        assert(nT < pMesh.pTriangles.size());
+        pMesh.pTriangles[nT].bad = b;
+    }
+
+public:
+    /**
+     * Check if the triangle was not visited
+     * during the current insertion and marks if visited.
+     * Invalid iterators are implicitly treated as visited. */
+    MOTH_HOST
+    bool not_visited()
+    {
+        moth_size_t nCounter{pMesh.pPoints.size()};
+        if (valid() && (pMesh.pTriangles[nT].nCounter < nCounter)) {
+            pMesh.pTriangles[nT].nCounter = nCounter;
+            return true;
+        } else {
+            return false;
+        }
+    }
 };  // struct moth_mesh2d_triangle_iter
 
-}
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
+/**
+ * Triangles around point iterator.
+ */
+struct MOTH_CORE moth_mesh2d_triangle_around_point_iter final
+{
+    moth_mesh2d_point_iter pP;
+    moth_mesh2d_triangle_iter pT;
+
+public:
+    MOTH_HOST MOTH_DEVICE
+    explicit moth_mesh2d_triangle_around_point_iter(
+        const moth_mesh2d_point_iter& pP_): pP{pP_}, pT{pP_.triangle()}
+    {
+    }
+
+public:
+    MOTH_HOST MOTH_DEVICE
+    operator moth_mesh2d_triangle_iter() const
+    {
+        return pT;
+    }
+
+public:
+    /** Compare the iterators. */
+    /** @{ */
+    MOTH_HOST MOTH_DEVICE
+    bool operator==(
+        const moth_mesh2d_triangle_around_point_iter& pPT) const
+    {
+        return (pP == pPT.pP) && (pT == pPT.pT);
+    }
+    MOTH_HOST MOTH_DEVICE
+    bool operator!=(
+        const moth_mesh2d_triangle_around_point_iter& pPT) const
+    {
+        return (pP != pPT.pP) || (pT != pPT.pT);
+    }
+    /** @} */
+
+public:
+    /**
+     * Increment the iterator: go to the next CCW triangle,
+     * jumping over the borders. */
+    /** @{ */
+    MOTH_HOST MOTH_DEVICE
+    moth_mesh2d_triangle_around_point_iter& operator++()
+    {
+        /* @todo Implement without shift. */
+        if (pT.triangle(2).valid()) {
+            while (pT.triangle(2).point(1) != pP) {
+                moth_mesh2d_triangle_iter::lshift(pT.triangle(2));
+            }
+            pT = pT.triangle(2);
+        } else {
+            while (pT.triangle(3).valid()) {
+                --*this;
+            }
+        }
+        return *this;
+    }
+    MOTH_HOST MOTH_DEVICE
+    const moth_mesh2d_triangle_around_point_iter operator++(int)
+    {
+        moth_mesh2d_triangle_around_point_iter copy{*this};
+        ++*this;
+        return copy;
+    }
+    /** @} */
+
+    /**
+     * Decrement the iterator: go to the next CW triangle,
+     * jumping over the borders. */
+    /** @{ */
+    MOTH_HOST MOTH_DEVICE
+    moth_mesh2d_triangle_around_point_iter& operator--()
+    {
+        /* @todo Implement without shift. */
+        if (pT.triangle(3).valid()) {
+            while (pT.triangle(3).point(1) != pP) {
+                moth_mesh2d_triangle_iter::lshift(pT.triangle(3));
+            }
+            pT = pT.triangle(3);
+        } else {
+            while (pT.triangle(2).valid()) {
+                ++*this;
+            }
+        }
+        return *this;
+    }
+    MOTH_HOST MOTH_DEVICE
+    const moth_mesh2d_triangle_around_point_iter operator--(int)
+    {
+        moth_mesh2d_triangle_around_point_iter copy{*this};
+        ++*this;
+        return copy;
+    }
+    /** @} */
+};  // struct moth_mesh2d_triangle_around_point_iter
+
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
+struct moth_mesh2d_constraint_iter
+{
+public:
+    moth_mesh2d_point_iter point(moth_size_t k);
+};  // struct moth_mesh2d_constraint_iter

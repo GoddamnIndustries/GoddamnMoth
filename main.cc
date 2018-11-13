@@ -94,24 +94,24 @@ int main()
     std::default_random_engine random_engine;
     std::uniform_real_distribution<moth_real_t> uniform_distribution(-1.0, 1.0);
 
-    DT::moth_mesh2d builder;
+    moth_mesh2d builder;
     std::vector<moth_p2d> points;
     points.reserve(10000);
 
     for (moth_size_t m = 0; m < 1; ++m) {
         points.clear();
-        for (moth_size_t k = 0; k < 10000000; ++k) {
+        for (moth_size_t k = 0; k < 1000; ++k) {
             moth_p2d p{uniform_distribution(random_engine),
                        uniform_distribution(random_engine)};
             points.push_back(p);
         }
 
         auto c = clock();
-        builder.insert(points.data(), points.data() + points.size());
+        builder.insert_unconstrained(points.data(), points.data() + points.size());
         c = clock() - c;
         std::cerr << m + 1 << " " << moth_real_t(c) / CLOCKS_PER_SEC << std::endl;
     }
-    //builder.print();
+    builder.print();
 #endif
 
 #if 0

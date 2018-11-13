@@ -1,15 +1,29 @@
 #include "libGeometry2D/src/GeomMesh2.hh"
+#include "libGeometry2D/src/GeomSort.hh"
 
-int DT::cnt = 0;
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
 
-/**
- * Insert a new point to the mesh.
- */
 MOTH_HOST MOTH_CORE
-void DT::moth_mesh2d::insert(const moth_p2d& p1, moth_real_t eps)
+moth_mesh2d::moth_mesh2d(moth_size_t capacity)
 {
-    ++cnt;
+    /* Add super triangle points. */
+    pPoints.reserve(2 * capacity);
+    pPoints.push_back({-4.0, -4.0});
+    pPoints.push_back({+4.0, -4.0});
+    pPoints.push_back({ 0.0, +4.0});
 
+    /* Add super triangle. */
+    pTriangles.reserve(capacity);
+    pTriangles.push_back({0, 1, 2});
+}
+
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
+MOTH_HOST MOTH_CORE
+void moth_mesh2d::insert_unconstrained(const moth_p2d& p1, moth_real_t eps)
+{
     /* Round-off the point. */
     moth_p2d p{p1};
     if (eps > 0.0) {
@@ -23,7 +37,7 @@ void DT::moth_mesh2d::insert(const moth_p2d& p1, moth_real_t eps)
 
     /* Find first bad triangle, reach first bad border triangle and
      * proceed to walk-around it by using the connectivity -- ~O(log(n)). */
-    moth_mesh2d_triangle_iter pT_bad = triangle_end();
+    moth_mesh2d_triangle_iter pT_bad{triangle_end()};
     for (moth_mesh2d_triangle_iter pT_cur{pT_bad - 1};
                                    pT_cur != pT_bad; --pT_cur) {
         pT_cur.set_bad(moth_triangle2d::circle(*pT_cur, *pP));
@@ -167,4 +181,52 @@ void DT::moth_mesh2d::insert(const moth_p2d& p1, moth_real_t eps)
             break;
         }
     }
-}
+}   // void moth_mesh2d::insert_unconstrained(moth_p2d)
+
+MOTH_HOST
+void moth_mesh2d::insert_unconstrained(moth_p2d* pP_beg, moth_p2d* pP_end)
+{
+    /* Presort the triangle so that insertion
+     * will take constant time -- ~O(n). */
+    const static moth_size_t nSort_cutoff{100};
+    if (pP_end - pP_beg > nSort_cutoff + 1) {
+        moth_sort(pP_beg, pP_end);
+    }
+
+    /* Insert the presorted triangles -- ~O(n). */
+    for (moth_p2d* pP_cur{pP_beg};
+                   pP_cur != pP_end; ++pP_cur) {
+        insert_unconstrained(*pP_cur);
+    }
+}   // void moth_mesh2d::insert_unconstrained(moth_p2d*, moth_p2d*)
+
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
+#if 0
+/**
+ * Apply constrains to the pre-built Delaunay triangulation.
+ */
+MOTH_HOST
+void moth_mesh2d::apply_constraints()
+{
+    for (moth_mesh2d_constraint_iter pC_cur{constraint_begin()},
+                                     pC_end{constraint_end()};
+                                     pC_end != pC_cur; ++pC_cur) {
+
+        /* Walk around the triangles around constraint edge point
+         * and check if the constraint is met or
+         * subdivide the edge. */
+        for (moth_mesh2d_triangle_around_point_iter pT_beg{pC_cur.point(1)},
+                                                    pT_cur{pT_beg};;) {
+
+
+
+
+            if (pT_beg == ++pT_cur) {
+                break;
+            }
+        }
+    }
+}   // void moth_mesh2d::apply_constraints()
+#endif
