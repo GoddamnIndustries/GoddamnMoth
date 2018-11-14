@@ -11,94 +11,94 @@ using geom_p2d_array = std::vector<moth_p2d>;
 /**
  * 2D polygon base container.
  */
-struct MOTH_CORE geom_poly2d_base : protected geom_p2d_array
+struct MOTH_CORE moth_poly2d_base : public geom_p2d_array
 {
     friend struct geom_poly2d_iter;
 
 public:
     MOTH_HOST MOTH_DEVICE
-    explicit geom_poly2d_base(const moth_p2d& p): geom_p2d_array{{p}} {}
+    explicit moth_poly2d_base(const moth_p2d& p): geom_p2d_array{{p}} {}
     MOTH_HOST MOTH_DEVICE
-    explicit geom_poly2d_base() = default;
+    explicit moth_poly2d_base() = default;
     MOTH_HOST MOTH_DEVICE
-    virtual ~geom_poly2d_base() = default;
-};  // struct geom_poly2d_base
+    virtual ~moth_poly2d_base() = default;
+};  // struct moth_poly2d_base
 
 /**
  * 2D polygon vertex/edge iterator.
  */
-struct MOTH_CORE geom_poly2d_iter final
+struct MOTH_CORE moth_poly2d_iter final
 {
-    const geom_poly2d_base* poly = nullptr;
+    const moth_poly2d_base* poly = nullptr;
     moth_diff_t offset = 1;
     moth_size_t index = 0;
 
 public:
     MOTH_HOST MOTH_DEVICE
-    bool operator==(const geom_poly2d_iter& iter) const
+    bool operator==(const moth_poly2d_iter& iter) const
     {
         return (poly == iter.poly) && (index == iter.index);
     }
     MOTH_HOST MOTH_DEVICE
-    bool operator!=(const geom_poly2d_iter& iter) const
+    bool operator!=(const moth_poly2d_iter& iter) const
     {
         return (poly != iter.poly) || (index != iter.index);
     }
 
 public:
     MOTH_HOST MOTH_DEVICE
-    geom_poly2d_iter operator+(const moth_diff_t delta) const
+    moth_poly2d_iter operator+(const moth_diff_t delta) const
     {
         return {poly, offset, (index + offset * delta) % poly->size()};
     }
     MOTH_HOST MOTH_DEVICE
-    geom_poly2d_iter& operator+=(const moth_diff_t delta)
+    moth_poly2d_iter& operator+=(const moth_diff_t delta)
     {
         return *this = *this + delta;
     }
 
     MOTH_HOST MOTH_DEVICE
-    geom_poly2d_iter operator-(const moth_diff_t delta) const
+    moth_poly2d_iter operator-(const moth_diff_t delta) const
     {
         return {poly, offset, (index - offset * delta) % poly->size()};
     }
     MOTH_HOST MOTH_DEVICE
-    geom_poly2d_iter& operator-=(const moth_diff_t delta)
+    moth_poly2d_iter& operator-=(const moth_diff_t delta)
     {
         return *this = *this - delta;
     }
 
 public:
     MOTH_HOST MOTH_DEVICE
-    geom_poly2d_iter& operator++()
+    moth_poly2d_iter& operator++()
     {
         return *this += 1;
     }
     MOTH_HOST MOTH_DEVICE
-    const geom_poly2d_iter operator++(int)
+    const moth_poly2d_iter operator++(int)
     {
         return (*this += 1) - 1;
     }
 
     MOTH_HOST MOTH_DEVICE
-    geom_poly2d_iter& operator--()
+    moth_poly2d_iter& operator--()
     {
         return *this -= 1;
     }
     MOTH_HOST MOTH_DEVICE
-    const geom_poly2d_iter operator--(int)
+    const moth_poly2d_iter operator--(int)
     {
         return (*this -= 1) + 1;
     }
 
 public:
     MOTH_HOST MOTH_DEVICE
-    geom_poly2d_iter next() const
+    moth_poly2d_iter next() const
     {
         return *this + 1;
     }
     MOTH_HOST MOTH_DEVICE
-    geom_poly2d_iter prev() const
+    moth_poly2d_iter prev() const
     {
         return *this - 1;
     }
@@ -114,49 +114,49 @@ public:
     {
         return {point(), next().point()};
     }
-};  // struct geom_poly2d_iter
+};  // struct moth_poly2d_iter
 
 /**
  * 2D polygon.
  */
-struct MOTH_CORE geom_poly2d final : public geom_poly2d_base
+struct MOTH_CORE moth_poly2d final : public moth_poly2d_base
 {
 public:
     MOTH_HOST MOTH_DEVICE
-    explicit geom_poly2d(const moth_p2d& p): geom_poly2d_base{p} {}
+    explicit moth_poly2d(const moth_p2d& p): moth_poly2d_base{p} {}
     MOTH_HOST MOTH_DEVICE
-    explicit geom_poly2d() = default;
+    explicit moth_poly2d() = default;
 
 public:
     MOTH_HOST MOTH_DEVICE
-    geom_poly2d_iter iter() const
+    moth_poly2d_iter iter() const
     {
         return {this, +1};
     }
     MOTH_HOST MOTH_DEVICE
-    geom_poly2d_iter iter_rev() const
+    moth_poly2d_iter iter_rev() const
     {
         return {this, -1};
     }
 
 public:
     MOTH_HOST
-    static void push(geom_poly2d& poly, const moth_p2d& p)
+    static void push(moth_poly2d& poly, const moth_p2d& p)
     {
         poly.push_back(p);
     }
     MOTH_HOST
-    static void pop(geom_poly2d& poly)
+    static void pop(moth_poly2d& poly)
     {
         poly.pop_back();
     }
 
 public:
     MOTH_HOST MOTH_DEVICE
-    static moth_real_t len(const geom_poly2d& poly)
+    static moth_real_t len(const moth_poly2d& poly)
     {
         moth_real_t length = 0.0;
-        geom_poly2d_iter iter = poly.iter();
+        moth_poly2d_iter iter = poly.iter();
         do {
             length += moth_e2d::len(iter.edge());
         } while ((++iter) != poly.iter());
@@ -164,10 +164,10 @@ public:
     }
 
     MOTH_HOST MOTH_DEVICE
-    static moth_real_t area(const geom_poly2d& poly)
+    static moth_real_t area(const moth_poly2d& poly)
     {
         moth_real_t area = 0.0;
-        geom_poly2d_iter iter = poly.iter();
+        moth_poly2d_iter iter = poly.iter();
         do {
             area += moth_p2d::det(iter.edge().p1, iter.edge().p2) * 0.5;
         } while ((++iter) != poly.iter());
@@ -179,10 +179,10 @@ public:
      * Check if point is inside polygon.
      */
     MOTH_HOST MOTH_DEVICE
-    static bool contains(const geom_poly2d& poly, const moth_p2d& p)
+    static bool contains(const moth_poly2d& poly, const moth_p2d& p)
     {
         size_t intersections = 0;
-        geom_poly2d_iter iter = poly.iter();
+        moth_poly2d_iter iter = poly.iter();
         do {
             moth_e2d e;
             moth_e2d e1 = iter.edge();
@@ -199,11 +199,15 @@ public:
     }
 
 public:
+    MOTH_HOST
+    static bool simple(const moth_poly2d& poly);
+
+public:
     /**
      * Intersection of two polygons.
      */
     MOTH_HOST
-    friend geom_poly2d operator*(const geom_poly2d& poly1, const geom_poly2d& poly2)
+    friend moth_poly2d operator*(const moth_poly2d& poly1, const moth_poly2d& poly2)
     {
         std::abort();
     }
@@ -212,7 +216,7 @@ public:
      * Union of two polygons.
      */
     MOTH_HOST
-    friend geom_poly2d operator+(const geom_poly2d& poly1, const geom_poly2d& poly2)
+    friend moth_poly2d operator+(const moth_poly2d& poly1, const moth_poly2d& poly2)
     {
         std::abort();
     }
@@ -221,22 +225,22 @@ public:
      * Difference of two polygons.
      */
     MOTH_HOST
-    friend geom_poly2d operator-(const geom_poly2d& poly1, const geom_poly2d& poly2)
+    friend moth_poly2d operator-(const moth_poly2d& poly1, const moth_poly2d& poly2)
     {
         std::abort();
     }
 
 public:
     MOTH_HOST
-    static std::string str(const geom_poly2d& poly);
+    static std::string str(const moth_poly2d& poly);
     MOTH_HOST
-    static std::string plt(const geom_poly2d& poly);
-};  // struct geom_poly2d
+    static std::string plt(const moth_poly2d& poly);
+};  // struct moth_poly2d
 
 MOTH_HOST MOTH_CORE
-std::ostream& operator<<(std::ostream& stream, const geom_poly2d& poly);
+std::ostream& operator<<(std::ostream& stream, const moth_poly2d& poly);
 MOTH_HOST MOTH_CORE
-std::istream& operator>>(std::istream& stream, geom_poly2d& poly);
+std::istream& operator>>(std::istream& stream, moth_poly2d& poly);
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -251,15 +255,15 @@ public:
      * Returns rectangle with given south-west and north-east points.
      */
     MOTH_HOST
-    static geom_poly2d rect(const moth_p2d& p_sw, const moth_p2d& p_ne)
+    static moth_poly2d rect(const moth_p2d& p_sw, const moth_p2d& p_ne)
     {
         moth_p2d p_se{p_ne.x, p_sw.y};
         moth_p2d p_nw{p_sw.x, p_ne.y};
-        geom_poly2d poly{};
-        geom_poly2d::push(poly, p_sw);
-        geom_poly2d::push(poly, p_se);
-        geom_poly2d::push(poly, p_ne);
-        geom_poly2d::push(poly, p_nw);
+        moth_poly2d poly{};
+        moth_poly2d::push(poly, p_sw);
+        moth_poly2d::push(poly, p_se);
+        moth_poly2d::push(poly, p_ne);
+        moth_poly2d::push(poly, p_nw);
         return poly;
     }
 
@@ -267,15 +271,15 @@ public:
      * Circle of the given radius with CCW orientation.
      */
     MOTH_HOST
-    static geom_poly2d circle(const moth_p2d& c, moth_real_t r, moth_size_t n = 10)
+    static moth_poly2d circle(const moth_p2d& c, moth_real_t r, moth_size_t n = 10)
     {
         assert(r > 0.0);
         assert(n > 1);
-        geom_poly2d poly{};
+        moth_poly2d poly{};
         for (moth_size_t i = 0; i < n; ++i) {
             moth_real_t phi = 2.0 * MOTH_PI * i / n;
             moth_p2d p = c + moth_p2d{r * std::cos(phi), r * std::sin(phi)};
-            geom_poly2d::push(poly, p);
+            moth_poly2d::push(poly, p);
         }
         return poly;
     }
@@ -284,19 +288,19 @@ public:
      * Star of given outer and inner radius with CCW orientation.
      */
     MOTH_HOST
-    static geom_poly2d star(const moth_p2d &c, moth_real_t r1, moth_real_t r2, moth_size_t n = 10)
+    static moth_poly2d star(const moth_p2d &c, moth_real_t r1, moth_real_t r2, moth_size_t n = 10)
     {
         assert(r1 > 0.0 && r2 > 0.0);
         assert(n > 1);
-        geom_poly2d poly{};
+        moth_poly2d poly{};
         for (moth_size_t i = 0; i < n; ++i) {
             moth_real_t phi1 = 2.0 * MOTH_PI * (i + 0.0) / n;
             moth_p2d p1 = c + moth_p2d{r1 * std::cos(phi1), r1 * std::sin(phi1)};
-            geom_poly2d::push(poly, p1);
+            moth_poly2d::push(poly, p1);
 
             moth_real_t phi2 = 2.0 * MOTH_PI * (i + 0.5) / n;
             moth_p2d p2 = c + moth_p2d{r1 * std::cos(phi1), r2 * std::sin(phi1)};
-            geom_poly2d::push(poly, p2);
+            moth_poly2d::push(poly, p2);
         }
         return poly;
     }
@@ -306,7 +310,7 @@ public:
      * Returns convex hull of the given set of points.
      */
     MOTH_HOST
-    static geom_poly2d convex_hull(geom_p2d_array& p)
+    static moth_poly2d convex_hull(geom_p2d_array& p)
     {
         std::iter_swap(p.begin(), std::min_element(p.begin(), p.end(),
             [&](const moth_p2d& p1, const moth_p2d& p2) {
@@ -317,17 +321,17 @@ public:
                 return moth_p2d::det(p1 - p[0], p2 - p[0]) < 0;
             });
 
-        geom_poly2d hull;
-        geom_poly2d::push(hull, p[0]);
-        geom_poly2d::push(hull, p[1]);
-        geom_poly2d::push(hull, p[2]);
+        moth_poly2d hull;
+        moth_poly2d::push(hull, p[0]);
+        moth_poly2d::push(hull, p[1]);
+        moth_poly2d::push(hull, p[2]);
         for (moth_size_t i = 3; i < p.size(); ++i) {
             moth_p2d p_i = p[i];
             moth_e2d e = hull.iter_rev().edge();
             while (moth_p2d::det(e.p2 - p_i, e.p1 - p_i) >= 0.0) {
-                geom_poly2d::pop(hull);
+                moth_poly2d::pop(hull);
             }
-            geom_poly2d::push(hull, p_i);
+            moth_poly2d::push(hull, p_i);
         }
         return hull;
     }

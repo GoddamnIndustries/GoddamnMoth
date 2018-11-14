@@ -11,8 +11,6 @@ struct MOTH_CORE moth_p2d
     moth_real_t y{};
 
 public:
-    /** Compare vectors.
-     * @{ */
     MOTH_HOST MOTH_DEVICE
     bool operator==(const moth_p2d& p) const
     {
@@ -23,7 +21,36 @@ public:
     {
         return (x != p.x) || (y != p.y);
     }
-    /** @} */
+
+    MOTH_HOST MOTH_DEVICE
+    bool operator>(const moth_p2d& p) const
+    {
+        if (x == p.x) {
+            return y > p.y;
+        } else {
+            return x > p.x;
+        }
+    }
+    MOTH_HOST MOTH_DEVICE
+    bool operator>=(const moth_p2d& p) const
+    {
+        return (*this == p) || (*this > p);
+    }
+
+    MOTH_HOST MOTH_DEVICE
+    bool operator<(const moth_p2d& p) const
+    {
+        if (x == p.x) {
+            return y < p.y;
+        } else {
+            return x < p.x;
+        }
+    }
+    MOTH_HOST MOTH_DEVICE
+    bool operator<=(const moth_p2d& p) const
+    {
+        return (*this == p) || (*this < p);
+    }
 
 public:
     MOTH_HOST MOTH_DEVICE
@@ -92,8 +119,6 @@ public:
     }
 
 public:
-    /** Pre-component minimum or maximum of two vectors.
-     * @{ */
     MOTH_HOST MOTH_DEVICE
     static moth_p2d max(const moth_p2d& p1, const moth_p2d& p2)
     {
@@ -104,16 +129,13 @@ public:
     {
         return {std::min(p1.x, p2.x), std::min(p1.y, p2.y)};
     }
-    /** @} */
 
 public:
-    /** Dot product of two vectors. */
     MOTH_HOST MOTH_DEVICE
     static moth_real_t dot(const moth_p2d& p1, const moth_p2d& p2)
     {
         return p1.x * p2.x + p1.y * p2.y;
     }
-    /** Length of the vector. */
     MOTH_HOST MOTH_DEVICE
     static moth_real_t len(const moth_p2d& p1)
     {
@@ -146,9 +168,10 @@ public:
     MOTH_HOST MOTH_DEVICE
     static moth_radians_t angle(const moth_p2d& p1, const moth_p2d& p2)
     {
-        moth_real_t sin{det(p1, p2)};
-        moth_real_t cos{dot(p1, p2) / len(p1) / len(p2)};
-        return std::atan2(sin, cos);
+        //moth_real_t sin{det(p1, p2)};
+        moth_real_t cos{dot(p1, p2)/ len(p1) / len(p2)};
+        return std::acos(cos);
+        //return std::atan2(sin, cos);
     }
 
     MOTH_HOST MOTH_DEVICE
@@ -173,20 +196,6 @@ MOTH_HOST MOTH_CORE
 extern std::ostream& operator<<(std::ostream& stream, const moth_p2d& p);
 MOTH_HOST MOTH_CORE
 extern std::istream& operator>>(std::istream& stream, moth_p2d& p);
-
-namespace std {
-    template<>
-    struct hash<moth_p2d>
-    {
-        using result_type = size_t;
-        using argument_type = moth_p2d;
-        result_type operator()(const argument_type& p) const noexcept
-        {
-            return hash<moth_real_t>()(p.x) ^
-                   hash<moth_real_t>()(p.y);
-        }
-    };  // struct hash<moth_p2d>
-}   // namespace std
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -382,21 +391,6 @@ MOTH_HOST MOTH_CORE
 extern std::ostream& operator<<(std::ostream& stream, const moth_p3d& p);
 MOTH_HOST MOTH_CORE
 extern std::istream& operator>>(std::istream& stream, moth_p3d& p);
-
-namespace std {
-    template<>
-    struct hash<moth_p3d>
-    {
-        using result_type = size_t;
-        using argument_type = moth_p3d;
-        result_type operator()(const argument_type& p) const noexcept
-        {
-            return hash<moth_real_t>()(p.x) ^
-                   hash<moth_real_t>()(p.y) ^
-                   hash<moth_real_t>()(p.z);
-        }
-    };  // struct hash<moth_p2d>
-}   // namespace std
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //

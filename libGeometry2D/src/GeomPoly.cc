@@ -1,5 +1,7 @@
 #include "libGeometry2D/src/GeomPoly.hh"
 #include "libCommon/src/CommTest.hh"
+#include "GeomPoly.hh"
+
 
 #include <sstream>
 #include <cstdarg>
@@ -17,10 +19,10 @@
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-std::ostream& operator<<(std::ostream& stream, const geom_poly2d& poly)
+std::ostream& operator<<(std::ostream& stream, const moth_poly2d& poly)
 {
     stream << "(";
-    geom_poly2d_iter iter = poly.iter();
+    moth_poly2d_iter iter = poly.iter();
     do {
         stream << iter.point();
         if (iter.next() != poly.iter()) {
@@ -31,7 +33,7 @@ std::ostream& operator<<(std::ostream& stream, const geom_poly2d& poly)
     return stream;
 }
 
-std::istream& operator>>(std::istream& stream, geom_poly2d& poly)
+std::istream& operator>>(std::istream& stream, moth_poly2d& poly)
 {
     abort();
 }
@@ -39,8 +41,95 @@ std::istream& operator>>(std::istream& stream, geom_poly2d& poly)
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
+#include <map>
+
+struct moth_poly2d_event_t
+{
+    moth_poly2d_iter pE{};
+    bool left{};
+};  // struct moth_poly2d_event_t
+
+struct moth_poly2d_event_queue : public std::vector<moth_poly2d_event_t>
+{
+public:
+    explicit moth_poly2d_event_queue(const moth_poly2d& poly)
+    {
+        moth_poly2d_iter pE_cur = poly.iter();
+        do {
+            moth_poly2d_event_t eP_cur{pE_cur};
+            moth_poly2d_event_t eP_nxt{pE_cur.next()};
+            if (eP_cur.pE.point() < eP_nxt.pE.point()) {
+                eP_cur.left = true;
+            } else {
+                eP_nxt.left = true;
+            }
+            push_back(eP_cur);
+            push_back(eP_nxt);
+        } while ((++pE_cur) != poly.iter());
+        std::sort(begin(), end(), [](const moth_poly2d_event_t& eP1, const moth_poly2d_event_t& eP2) {
+            return eP1.pE.point() < eP2.pE.point();
+        });
+    }
+};  // struct moth_poly2d_event_queue
+
+struct moth_poly2d_sweep_line_segment_t
+{
+
+};  // struct moth_poly2d_sweep_line_segment_t
+
+
+
+
+
+
+bool moth_poly2d::simple(const moth_poly2d& poly)
+{
+    return false;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
 MOTH_HOST
-std::string geom_poly2d::str(const geom_poly2d& poly)
+std::string moth_poly2d::str(const moth_poly2d& poly)
 {
     std::stringstream stream;
     stream << poly;
@@ -49,10 +138,10 @@ std::string geom_poly2d::str(const geom_poly2d& poly)
 }
 
 MOTH_HOST
-std::string geom_poly2d::plt(const geom_poly2d& poly)
+std::string moth_poly2d::plt(const moth_poly2d& poly)
 {
     std::stringstream plt_stream;
-    geom_poly2d_iter iter = poly.iter();
+    moth_poly2d_iter iter = poly.iter();
     do {
         plt_stream << iter.point().x << " " << iter.point().y << " ";
         //plt_stream << iter.point().u << " " << iter.point().v << " ";
@@ -126,48 +215,48 @@ std::string geom_poly2d::plt(const geom_poly2d& poly)
 
 COMM_UNIT_TEST()
 {
-    geom_poly2d square = geom_poly2d_primitives::rect({0.0,0.0}, {1.0,1.0});
-    COMM_UNIT_VERIFY_T(geom_poly2d::area(square) == 1.0);
-    COMM_UNIT_VERIFY_T(geom_poly2d::len(square) == 4.0);
+    moth_poly2d square = geom_poly2d_primitives::rect({0.0,0.0}, {1.0,1.0});
+    COMM_UNIT_VERIFY_T(moth_poly2d::area(square) == 1.0);
+    COMM_UNIT_VERIFY_T(moth_poly2d::len(square) == 4.0);
 
-    geom_poly2d circle = geom_poly2d_primitives::circle({0.0,0.0}, 1, 4);
-    COMM_UNIT_VERIFY_T(geom_poly2d::area(circle) == 2.0);
+    moth_poly2d circle = geom_poly2d_primitives::circle({0.0,0.0}, 1, 4);
+    COMM_UNIT_VERIFY_T(moth_poly2d::area(circle) == 2.0);
 };
 
 COMM_UNIT_TEST()
 {
-    geom_poly2d square = geom_poly2d_primitives::rect({0.0,0.0}, {1.0,1.0});
-    COMM_UNIT_VERIFY_T(geom_poly2d::str(square) ==
+    moth_poly2d square = geom_poly2d_primitives::rect({0.0,0.0}, {1.0,1.0});
+    COMM_UNIT_VERIFY_T(moth_poly2d::str(square) ==
                        "((0, 0), (1, 0), (1, 1), (0, 1))");
 };
 
 #if 0
 COMM_UNIT_TEST()
 {
-    geom_poly2d box1;
-    geom_poly2d box2;
+    moth_poly2d box1;
+    moth_poly2d box2;
 
     /* Simplest possible intersection.
      * ( And with reversed second box. )*/
     box1 = geom_poly2d_primitives::rect({0.0,0.0}, {2.0,2.0});
     box2 = geom_poly2d_primitives::rect({1.0,1.0}, {3.0,3.0});
-    COMM_UNIT_VERIFY_T(geom_poly2d::str(box1 + box2) ==
+    COMM_UNIT_VERIFY_T(moth_poly2d::str(box1 + box2) ==
                        "((0, 0), (2, 0), (2, 1), (3, 1),"
                        " (3, 3), (1, 3), (1, 2), (0, 2))");
     box1 = geom_poly2d_primitives::rect({0.0,0.0}, {2.0,2.0});
     box2 = geom_poly2d_primitives::rect({3.0,3.0}, {1.0,1.0});
-    COMM_UNIT_VERIFY_T(geom_poly2d::str(box1 + box2) ==
+    COMM_UNIT_VERIFY_T(moth_poly2d::str(box1 + box2) ==
                        "((0, 0), (2, 0), (2, 1), (3, 1),"
                        " (3, 3), (1, 3), (1, 2), (0, 2))");
 
     box1 = geom_poly2d_primitives::rect({0.0,0.0}, {4.0,4.0});
     box2 = geom_poly2d_primitives::rect({2.0,1.0}, {6.0,3.0});
-    COMM_UNIT_VERIFY_T(geom_poly2d::str(box1 + box2) ==
+    COMM_UNIT_VERIFY_T(moth_poly2d::str(box1 + box2) ==
                        "((0, 0), (4, 0), (4, 1), (6, 1),"
                        " (6, 3), (4, 3), (4, 4), (0, 4))");
     box1 = geom_poly2d_primitives::rect({0.0,0.0}, {4.0,4.0});
     box2 = geom_poly2d_primitives::rect({6.0,3.0}, {2.0,1.0});
-    COMM_UNIT_VERIFY_T(geom_poly2d::str(box1 + box2) ==
+    COMM_UNIT_VERIFY_T(moth_poly2d::str(box1 + box2) ==
                        "((0, 0), (4, 0), (4, 1), (6, 1),"
                        " (6, 3), (4, 3), (4, 4), (0, 4))");
 };

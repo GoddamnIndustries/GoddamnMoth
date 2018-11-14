@@ -3,6 +3,7 @@
 //#include "libGeometry2D/src/GeomMesh.hh"
 #include "libGeometry2D/src/GeomMesh2.hh"
 #include "libGeometry2D/src/GeomSort.hh"
+#include "libGeometry2D/src/GeomPoly.hh"
 
 moth_real_t f(const moth_p3d& x)
 {
@@ -39,6 +40,7 @@ moth_p3d moth_grad(const moth_tetrahedron& T, moth_real_t f1, moth_real_t f2,
 
 int main()
 {
+    // Test Hilbert sort.
 #if 0
     std::vector<moth_p2d> points;
     for (moth_real_t i = 0; i <= 31; ++i) {
@@ -49,6 +51,7 @@ int main()
     moth_sort(points.data(), points.data() + points.size());
 #endif
 
+    // Benchmark Hilbert sort.
 #if 0
     std::default_random_engine random_engine;
     std::uniform_real_distribution<moth_real_t> uniform_distribution(-1.0, 1.0);
@@ -70,11 +73,12 @@ int main()
     }
 #endif
 
+    // Test incremental unconstrained triangulation.
 #if 0
     std::default_random_engine random_engine;
     std::uniform_real_distribution<moth_real_t> uniform_distribution(-1.0, 1.0);
 
-    DT::moth_mesh2d builder;
+    moth_mesh2d builder;
 
     for (moth_size_t m = 0; m < 10; ++m) {
         auto c = clock();
@@ -90,7 +94,8 @@ int main()
     builder.print();
 #endif
 
-#if 1
+    // Test unconstrained triangulation.
+#if 0
     std::default_random_engine random_engine;
     std::uniform_real_distribution<moth_real_t> uniform_distribution(-1.0, 1.0);
 
@@ -114,30 +119,18 @@ int main()
     builder.print();
 #endif
 
-#if 0
-    /*
-    builder.insert_unconstrained({5.0, 0.0});
-    for (moth_size_t i = 1; i < 40; ++i) {
-        moth_real_t r = 5.0;
-        moth_real_t phi = 2.0 * i / 40.0 * MOTH_PI;
-        moth_real_t x = r * cos(phi);
-        moth_real_t y = r * sin(phi) + x;
-        builder.insert_unconstrained({x, y});
-        builder.pConstraints.push_back({builder.pPoints.size() - 2, builder.pPoints.size() - 1});
-    }
-    */
+    // Test constrained triangulation.
+#if 1
+    moth_poly2d rect{geom_poly2d_primitives::rect({0.0, 0.0}, {4.0, 2.0})};
+    moth_poly2d crcl{geom_poly2d_primitives::star({4.0/3.0, 1.0}, 2.0/5.0, 2.5/5.0, 25)};
 
-    /*
-    builder.insert_unconstrained({-0.75, -0.75});
-    builder.insert_unconstrained({+0.75, -0.75});
-    builder.insert_unconstrained({+0.75, +0.75});
-    builder.insert_unconstrained({-0.75, +0.75});
-    builder.pConstraints.push_back({builder.pPoints.size() - 4, builder.pPoints.size() - 3});
-    builder.pConstraints.push_back({builder.pPoints.size() - 3, builder.pPoints.size() - 2});
-    builder.pConstraints.push_back({builder.pPoints.size() - 2, builder.pPoints.size() - 1});
-    builder.pConstraints.push_back({builder.pPoints.size() - 1, builder.pPoints.size() - 4});
-    builder.pConstraints.push_back({builder.pPoints.size() - 4, builder.pPoints.size() - 2});
-     */
+    moth_mesh2d builder;
+    builder.insert_constrain(rect);
+    builder.insert_constrain(crcl);
+
+    //builder.peel();
+    //builder.refine();
+    builder.print();
 
     //for (int m = 0; m < 100; ++m)
     //builder.refine();
@@ -152,27 +145,6 @@ int main()
         moth_real_t y = r * sin(phi);
         builder.insert({x, y});
     }
-#endif
-
-#if 0
-    moth_tri_grid2d_builder builder;
-    std::vector<moth_p2d> P;
-    for (moth_size_t i = 0; i < 40; ++i) {
-        moth_real_t r = 5.0;
-        moth_real_t phi = 2.0 * i / 40.0 * MOTH_PI;
-        moth_real_t x = r * cos(phi);
-        moth_real_t y = r * sin(phi) + x;
-        builder.insert({x, y});
-        P.push_back({x , y});
-    }
-    std::vector<moth_e2d> E;
-    for (moth_size_t i = 0; i < P.size() - 1; ++i) {
-        E.push_back({P[i], P[i + 1]});
-    }
-    E.push_back({P.back(), P.front()});
-    builder.tri_edges = E;
-    builder.refine();
-    builder.print();
 #endif
 
     moth_tetrahedron T{

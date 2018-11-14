@@ -10,29 +10,29 @@
 struct moth_mesh2d;
 struct moth_mesh2d_p;
 struct moth_mesh2d_e;
-struct moth_mesh2d_triangle;
+struct moth_mesh2d_triangle_t;
 
 struct MOTH_CORE moth_mesh2d_p final : public moth_p2d
 {
-    moth_mesh2d_triangle* pT{};
+    moth_mesh2d_triangle_t* pT{};
 };  // struct moth_mesh2d_p
 
 struct MOTH_CORE moth_mesh2d_e final
 {
     moth_mesh2d_p* pP1{};
     moth_mesh2d_p* pP2{};
-    moth_mesh2d_triangle* pT1{};
-    moth_mesh2d_triangle* pT2{};
+    moth_mesh2d_triangle_t* pT1{};
+    moth_mesh2d_triangle_t* pT2{};
 };  // struct moth_mesh2d_e
 
-struct MOTH_CORE moth_mesh2d_triangle final
+struct MOTH_CORE moth_mesh2d_triangle_t final
 {
     moth_mesh2d_p* pP1{};
     moth_mesh2d_p* pP2{};
     moth_mesh2d_p* pP3{};
-    moth_mesh2d_triangle* pT1{};
-    moth_mesh2d_triangle* pT2{};
-    moth_mesh2d_triangle* pT3{};
+    moth_mesh2d_triangle_t* pT1{};
+    moth_mesh2d_triangle_t* pT2{};
+    moth_mesh2d_triangle_t* pT3{};
     bool bad{};
     bool visited{};
 
@@ -54,7 +54,7 @@ public:
 
 struct MOTH_CORE moth_mesh2d
 {
-    std::vector<moth_mesh2d_triangle*> pTriangles;
+    std::vector<moth_mesh2d_triangle_t*> pTriangles;
     std::vector<moth_mesh2d_p*> pPoints;
 
 public:
@@ -62,10 +62,10 @@ public:
     moth_mesh2d(moth_size_t capacity = 100000)
     {
         /* Create super triangle. */
-        moth_mesh2d_triangle* pT = new moth_mesh2d_triangle{};
-        pT->pP1 = new moth_mesh2d_p{{-4.0, -4.0}, pT};
-        pT->pP2 = new moth_mesh2d_p{{+4.0, -4.0}, pT};
-        pT->pP3 = new moth_mesh2d_p{{   0.0, +4.0}, pT};
+        moth_mesh2d_triangle_t* pT = new moth_mesh2d_triangle_t{};
+        pT->pP1 = new moth_mesh2d_p{{-400.0, -400.0}, pT};
+        pT->pP2 = new moth_mesh2d_p{{+400.0, -400.0}, pT};
+        pT->pP3 = new moth_mesh2d_p{{   0.0, +400.0}, pT};
 
         /* Add super triangle. */
         pTriangles.reserve(capacity);
@@ -105,13 +105,13 @@ public:
 #endif
 
 #if 1
-        for (moth_mesh2d_triangle* pT : pTriangles) {
+        for (moth_mesh2d_triangle_t* pT : pTriangles) {
             pT->bad = moth_triangle2d::circle(**pT, *pP);
         }
 #endif
 
         /* Find first border bad triangle and sort it. */
-        moth_mesh2d_triangle* pT = nullptr;
+        moth_mesh2d_triangle_t* pT = nullptr;
         for (moth_size_t i = 0; i < pTriangles.size(); ++i) {
             pT = pTriangles[i];
             if (pT->bad) {
@@ -132,12 +132,12 @@ public:
         }
 
         moth_mesh2d_p* pP_f = pT->pP2;
-        moth_mesh2d_triangle* pT_f{};
-        moth_mesh2d_triangle* pT_c{};
-        moth_mesh2d_triangle* pT_p{};
+        moth_mesh2d_triangle_t* pT_f{};
+        moth_mesh2d_triangle_t* pT_c{};
+        moth_mesh2d_triangle_t* pT_p{};
         while (true) {
             pT_p = pT_c;
-            pT_c = new moth_mesh2d_triangle{pP, pT->pP2, pT->pP3};
+            pT_c = new moth_mesh2d_triangle_t{pP, pT->pP2, pT->pP3};
             if (pT_f == nullptr) {
                 pT_f = pT_c;
             }
@@ -187,7 +187,7 @@ public:
 
         /* Remove bad triangles. */
         pTriangles.erase(std::remove_if(pTriangles.begin(), pTriangles.end(),
-            [](const moth_mesh2d_triangle* pT) {
+            [](const moth_mesh2d_triangle_t* pT) {
                 if (pT->bad) {
                     delete pT;
                     return true;
@@ -203,7 +203,7 @@ public:
         std::ofstream TrFile(TrFilePath);
 
         for (moth_size_t i = 0; i < pTriangles.size(); ++i) {
-            const moth_mesh2d_triangle* pT = pTriangles[i];
+            const moth_mesh2d_triangle_t* pT = pTriangles[i];
 #if 0
             if (pT->pP1 == pPoints[0]) continue;
             if (pT->pP1 == pPoints[1]) continue;
