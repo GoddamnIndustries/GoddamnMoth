@@ -155,25 +155,11 @@ public:
 
 public:
     /**
-     * Apply constrains to the pre-built triangulation,
-     * preserving the Delaunay property,
-     * complexity in is @f$ O(k), k @f$ is number of constraints.
-     */
-    MOTH_HOST
-    void apply_constraints();
-
-
-public:
-    /**
      * @brief Insert points of a polygon into the mesh,
      *
      */
     MOTH_HOST
     moth_mesh2d_point_iter insert_constrain(const moth_poly2d& poly);
-
-
-    MOTH_HOST
-    void refine();
 
 public:
     template<typename T = moth_mesh2d_triangle_iter>

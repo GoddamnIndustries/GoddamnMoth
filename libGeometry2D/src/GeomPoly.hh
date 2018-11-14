@@ -299,7 +299,7 @@ public:
             moth_poly2d::push(poly, p1);
 
             moth_real_t phi2 = 2.0 * MOTH_PI * (i + 0.5) / n;
-            moth_p2d p2 = c + moth_p2d{r1 * std::cos(phi1), r2 * std::sin(phi1)};
+            moth_p2d p2 = c + moth_p2d{r2 * std::cos(phi2), r2 * std::sin(phi2)};
             moth_poly2d::push(poly, p2);
         }
         return poly;
