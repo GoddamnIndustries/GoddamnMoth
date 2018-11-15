@@ -224,39 +224,32 @@ void moth_mesh2d::apply_constrain_conforming(const moth_mesh2d_cedge_iter& pE)
                 moth_mesh2d_triangle_iter::lshift(pT_cur);
             }
 
-            /* Check if the constraint was met:
-             * if not, tessellate the constraint edge by inserting
-             * the intersection point with some triangle edge. */
-            if (pT_cur.point(2) != pP_end &&
-                pT_cur.point(3) != pP_end) {
-                moth_p2d p_int{};
-                if (moth_e2d::intersect((*pT_cur).edge(1), *pE_cur, p_int)) {
-                    /* Insertion of the point on an existing edge wouldn't break
-                     * the previously applied constraints. */
-                    moth_mesh2d_point_iter pP_int{insert_unconstrained(p_int)};
-
-                    /* Tessellate the constraint edge
-                     * by the intersection point. */
-                    pConstraints.push_back({pP_int.nP,
-                                            pP_end.nP});
-                    pE_int = --constraint_end();
-                    pE_cur.set_point(2, pP_int);
-
-                    /* Carefully set the neighbors. */
-                    if (pE_cur.edge(2).valid()) {
-                        pE_cur.edge(2).set_edge(1, pE_int);
-                        pE_int.set_edge(2, pE_cur.edge(2));
-                    }
-                    pE_int.set_edge(1, pE_cur);
-                    pE_cur.set_edge(2, pE_int);
-
-                    /* Proceed to the next triangle. */
-                    pE_cur = pE_int;
-                    pP_cur = pP_int;
-                    break;
-                }
-            } else {
+            /* Check if the constraint was met. */
+            if (pT_cur.point(2) == pP_end ||
+                pT_cur.point(3) == pP_end) {
                 pP_cur = pP_end;
+                break;
+            }
+            moth_p2d p_int{};
+            if (moth_e2d::intersect((*pT_cur).edge(1), *pE_cur, p_int)) {
+                moth_mesh2d_point_iter pP_int{insert_unconstrained(p_int)};
+
+                /* Tessellate the constraint edge
+                 * by inserting the intersection point. */
+                pConstraints.push_back({pP_int.nP,
+                                        pP_end.nP});
+                pE_int = --constraint_end();
+                pE_cur.set_point(2, pP_int);
+                if (pE_cur.edge(2).valid()) {
+                    pE_cur.edge(2).set_edge(1, pE_int);
+                    pE_int.set_edge(2, pE_cur.edge(2));
+                }
+                pE_int.set_edge(1, pE_cur);
+                pE_cur.set_edge(2, pE_int);
+
+                /* Proceed to the next triangle. */
+                pE_cur = pE_int;
+                pP_cur = pP_int;
                 break;
             }
         }
@@ -266,6 +259,7 @@ void moth_mesh2d::apply_constrain_conforming(const moth_mesh2d_cedge_iter& pE)
 MOTH_HOST
 void moth_mesh2d::apply_constrains_conforming()
 {
+    /* Apply all conforming constraints. */
     for (moth_mesh2d_cedge_iter pE_cur{constraint_begin()}, pE_end{constraint_end()};
                                 pE_cur != pE_end; ++pE_cur) {
         apply_constrain_conforming(pE_cur);
