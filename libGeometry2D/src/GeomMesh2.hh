@@ -121,7 +121,7 @@ public:
      * @see https://en.wikipedia.org/wiki/Bowyer–Watson_algorithm
      */
     MOTH_HOST
-    moth_mesh2d_point_iter insert_unconstrained(const moth_p2d& p1, moth_real_t eps = 0.0001);
+    moth_mesh2d_point_iter insert_unconstrained(const moth_p2d& p1, moth_real_t eps = 0.0000);
 
     /**
      * @brief Insert multiple points into the mesh ignoring \
