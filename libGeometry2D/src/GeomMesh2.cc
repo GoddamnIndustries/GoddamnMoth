@@ -411,9 +411,7 @@ moth_mesh2d::apply_constrain_ignoring_impl(moth_mesh2d_point_iter pP_beg,
         pT_new = --triangle_end();
 
         /* Carefully set the neighbors. */
-        if (pP_mid == pT_beg.point(1) ||
-            pP_mid == pT_beg.point(2) ||
-            pP_mid == pT_beg.point(3)) {
+        if (pP_mid == pT_beg.point(2)) {
             /* Link the triangle with the outer neighbor.
              * ( The outer triangle may not be presorted. ) */
             while (pT_beg.point(2) != pT_beg.triangle(3).point(1)) {
@@ -426,9 +424,7 @@ moth_mesh2d::apply_constrain_ignoring_impl(moth_mesh2d_point_iter pP_beg,
             pT_new.set_triangle(2, apply_constrain_ignoring_impl(pP_beg, pP_mid));
             pT_new.triangle(2).set_triangle(1, pT_new);
         }
-        if (pP_mid == pT_cur.point(1) ||
-            pP_mid == pT_cur.point(2) ||
-            pP_mid == pT_cur.point(3)) {
+        if (pP_mid == pT_cur.point(1)) {
             /* Link the triangle with the outer neighbor.
              * ( The outer triangle may not be presorted. ) */
             while (pT_cur.point(2) != pT_cur.triangle(3).point(1)) {
