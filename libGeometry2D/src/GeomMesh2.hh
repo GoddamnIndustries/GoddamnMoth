@@ -141,6 +141,13 @@ public:
 
 public:
     MOTH_HOST
+    void apply_constrain_conforming(const moth_mesh2d_cedge_iter& pE);
+
+    MOTH_HOST
+    void apply_constrains_conforming();
+
+public:
+    MOTH_HOST
     void apply_constrain_ignoring(const moth_mesh2d_cedge_iter& pE);
     MOTH_HOST
     moth_mesh2d_triangle_iter apply_constrain_ignoring_impl(moth_mesh2d_point_iter pP_cur,
@@ -150,19 +157,16 @@ public:
     void apply_constrains_ignoring();
 
 public:
-    MOTH_HOST
-    void apply_constrain_conforming(const moth_mesh2d_cedge_iter& pE);
-
-    MOTH_HOST
-    void apply_constrains_conforming();
-
-public:
     /**
      * @brief Insert points of a polygon into the mesh,
      *
      */
     MOTH_HOST
     moth_mesh2d_point_iter insert_constrain(const moth_poly2d& poly);
+
+public:
+    MOTH_HOST
+    void refine();
 
 public:
     template<typename T = moth_mesh2d_triangle_iter>

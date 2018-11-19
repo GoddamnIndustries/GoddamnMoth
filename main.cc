@@ -95,7 +95,7 @@ int main()
 #endif
 
     // Test unconstrained triangulation.
-#if 1
+#if 0
     std::default_random_engine random_engine;
     std::uniform_real_distribution<moth_real_t> uniform_distribution(-1.0, 1.0);
 
@@ -105,7 +105,7 @@ int main()
 
     for (moth_size_t m = 0; m < 1; ++m) {
         points.clear();
-        for (moth_size_t k = 0; k < 1000; ++k) {
+        for (moth_size_t k = 0; k < 10001; ++k) {
             moth_p2d p{uniform_distribution(random_engine),
                        uniform_distribution(random_engine)};
             points.push_back(p);
@@ -117,30 +117,30 @@ int main()
         std::cerr << m + 1 << " " << moth_real_t(c) / CLOCKS_PER_SEC << std::endl;
     }
 
-    builder.insert_unconstrained({0.0, -0.75});
-    builder.insert_unconstrained({0.0, +0.75});
+#if 0
+    builder.insert_unconstrained({-0.75, -0.75});
+    builder.insert_unconstrained({+0.75, +0.75});
     builder.pConstraints.push_back({builder.pPoints.size() - 2, builder.pPoints.size() - 1});
     builder.apply_constrains_ignoring();
-
+#endif
     builder.print();
 #endif
 
     // Test constrained triangulation.
-#if 0
-    moth_poly2d rect{geom_poly2d_primitives::rect({0.0, 0.0}, {4.0, 2.0})};
-    //moth_poly2d crcl{geom_poly2d_primitives::circle({4.0/3.0, 1.0}, 2.0/5.0, 25)};
-    moth_poly2d crcl{geom_poly2d_primitives::star({4.0/3.0, 1.0}, 2.0/5.0, 1.5/5.0, 25)};
+#if 1
+    moth_poly2d rect{geom_poly2d_primitives::rect({0.0, 0.0}, {6.0, 2.0})};
+    moth_poly2d crcl{geom_poly2d_primitives::circle({4.0/3.0, 1.0}, 2.0/5.0, 25)};
+    //moth_poly2d crcl{geom_poly2d_primitives::star({4.0/3.0, 1.0}, 2.0/5.0, 1.5/5.0, 25)};
 
     moth_mesh2d builder;
     builder.insert_constrain(rect);
-    builder.insert_constrain(crcl);
+    //builder.insert_constrain(crcl);
 
     //builder.peel();
-    //builder.refine();
+    builder.refine();
     builder.print();
 
     //for (int m = 0; m < 100; ++m)
-    //builder.refine();
 #endif
 
 #if 0

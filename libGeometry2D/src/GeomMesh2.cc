@@ -37,7 +37,7 @@ moth_mesh2d::insert_unconstrained(const moth_p2d& p1, moth_real_t eps)
     pPoints.push_back(p);
 
     /* Find first bad triangle, reach first bad border triangle and
-     * proceed to walk-around it by using the connectivity -- ~O(log(n)). */
+     * proceed to walk-around by using the connectivity -- ~O(log(n)). */
     moth_mesh2d_triangle_iter pT_bad{triangle_end()};
     for (moth_mesh2d_triangle_iter pT_cur{pT_bad - 1};
                                    pT_cur != pT_bad; --pT_cur) {
@@ -99,15 +99,15 @@ moth_mesh2d::insert_unconstrained(const moth_p2d& p1, moth_real_t eps)
 
         /* Walk around a border of the re-triangulation
          * area in CCW orientation inserting the triangles to the back -- ~O(1). */
-        moth_mesh2d_point_iter pP_frs{pT_cur.point(2)};
-        for (moth_mesh2d_triangle_iter pT_new{*this}, pT_prv{*this}, pT_frs{*this};;) {
+        moth_mesh2d_point_iter pP_beg{pT_cur.point(2)};
+        for (moth_mesh2d_triangle_iter pT_new{*this}, pT_prv{*this}, pT_beg{*this};;) {
             /* Add the new triangle. */
             pTriangles.push_back({pP.nP, pT_cur.point(2).nP,
                                          pT_cur.point(3).nP});
             pT_prv = pT_new;
             pT_new = triangle_end() - 1;
-            if (pT_frs.invalid()) {
-                pT_frs = pT_new;
+            if (pT_beg.invalid()) {
+                pT_beg = pT_new;
             }
 
             /* Carefully set the neighbors. */
@@ -125,11 +125,11 @@ moth_mesh2d::insert_unconstrained(const moth_p2d& p1, moth_real_t eps)
                 pT_new.set_triangle(3, pT_prv);
                 pT_prv.set_triangle(2, pT_new);
             }
-            if (pT_cur.point(3) == pP_frs) {
+            if (pT_cur.point(3) == pP_beg) {
                 /* End point of the last segment is the starting point.
                  * Link the last triangle with the first one and break. */
-                pT_frs.set_triangle(3, pT_new);
-                pT_new.set_triangle(2, pT_frs);
+                pT_beg.set_triangle(3, pT_new);
+                pT_new.set_triangle(2, pT_beg);
                 break;
             }
 
@@ -183,7 +183,7 @@ moth_mesh2d::insert_unconstrained(const moth_p2d& p1, moth_real_t eps)
     }
 
     return pP;
-}   // moth_mesh2d_point_iter moth_mesh2d::insert_unconstrained(moth_p2d)
+}   // moth_mesh2d::insert_unconstrained
 
 MOTH_HOST
 moth_mesh2d_point_iter
@@ -205,176 +205,7 @@ moth_mesh2d::insert_unconstrained(moth_p2d* pP_beg,
     }
 
     return pP;
-}   // moth_mesh2d_point_iter moth_mesh2d::insert_unconstrained(moth_p2d*, moth_p2d*)
-
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
-
-MOTH_HOST
-void moth_mesh2d::apply_constrain_ignoring(const moth_mesh2d_cedge_iter& pE)
-{
-    moth_mesh2d_point_iter pP_cur = pE.point(1);
-    moth_mesh2d_point_iter pP_end = pE.point(2);
-
-    /* Walk-through all affected (aka "bad") triangles
-     * and move them to the end -- ~O(1). */
-    moth_mesh2d_triangle_iter pT_bad{triangle_end()};
-    for (moth_mesh2d_triangle_iter pT_cur{pP_cur.triangle()};;
-                                   pT_cur = pT_cur.triangle(2)) {
-        /* Presort the triangle to start the
-         * forward walk-around. */
-        while (pP_cur != pT_cur.point(1)) {
-            moth_mesh2d_triangle_iter::lshift(pT_cur);
-        }
-
-        /* Check if the constraint was met,
-         * or the triangle intersects the constraint edge. */
-        if (pT_cur.point(2) == pP_end ||
-            pT_cur.point(3) == pP_end) {
-            break;
-        } else {
-            if (!moth_e2d::intersect((*pT_cur).edge(1), *pE)) {
-                continue;
-            }
-        }
-
-        /* Move current triangle triangle to the end,
-         * walk around edges until the end point is reached. */
-        pT_cur.set_bad();
-        moth_mesh2d_triangle_iter::swap_assign(pT_cur, --pT_bad);
-        while (pT_cur.point(2) != pP_end) {
-            /* Carefully proceed to the new edge:
-             * select the new triangle with edge CCW continuation. */
-            moth_mesh2d_triangle_iter::swap(pT_cur.triangle(1), --pT_bad);
-            while (pT_cur.point(3) != pT_cur.triangle(1).point(3)) {
-                moth_mesh2d_triangle_iter::lshift(pT_cur.triangle(1));
-            }
-            pT_cur = pT_cur.triangle(1);
-            pT_cur.set_bad();
-            while (!moth_e2d::intersect((*pT_cur).edge(1), *pE)) {
-                moth_mesh2d_triangle_iter::swap(pT_cur.triangle(3), --pT_bad);
-                while (pT_cur.point(1) != pT_cur.triangle(3).point(1)) {
-                    moth_mesh2d_triangle_iter::lshift(pT_cur.triangle(3));
-                }
-                pT_cur = pT_cur.triangle(3);
-                pT_cur.set_bad();
-            }
-        }
-        break;
-    }
-
-    /* Recursively construct triangles in the area,
-     * using the Growing Circles method.*/
-    apply_constrain_ignoring_impl(pP_cur, pP_end);
-    apply_constrain_ignoring_impl(pP_end, pP_cur);
-
-    /* Walk through bad triangles, move them to the end
-     * and delete -- ~O(1). */
-    for (moth_mesh2d_triangle_iter pT_cur{triangle_begin()}, pT_end{triangle_end()};
-                                   pT_cur != pT_end; ) {
-        if (pT_cur.bad()) {
-            moth_mesh2d_triangle_iter::swap(pT_cur, --pT_end);
-            pTriangles.pop_back();
-        } else {
-            ++pT_cur;
-            //break;
-        }
-    }
-}   // void moth_mesh2d::apply_constrain_ignoring
-
-MOTH_HOST
-moth_mesh2d_triangle_iter
-moth_mesh2d::apply_constrain_ignoring_impl(moth_mesh2d_point_iter pP_beg,
-                                           moth_mesh2d_point_iter pP_end)
-{
-    moth_mesh2d_triangle_iter pT_new{*this}, pT_beg{*this};
-    for (moth_mesh2d_triangle_iter pT_cur{pP_beg.triangle()};;
-                                   pT_cur = pT_cur.triangle(2)) {
-        /* Presort the triangle to start the walk-around. */
-        while (pP_beg != pT_cur.point(1)) {
-            moth_mesh2d_triangle_iter::lshift(pT_cur);
-        }
-
-        /* Check if the constraint was met,
-         * or the triangle intersects the constraint edge. */
-        if (pT_cur.point(2) == pP_end ||
-            pT_cur.point(3) == pP_end) {
-            break;
-        } else {
-            if (!moth_e2d::intersect((*pT_cur).edge(1), {*pP_beg, *pP_end})) {
-                continue;
-            }
-        }
-        pT_beg = pT_cur;
-
-        /* Find the closest point to the edge. */
-        moth_mesh2d_point_iter pP_cur{pT_cur.point(2)};
-        while (pT_cur.point(2) != pP_end) {
-            /* Carefully proceed to the new edge:
-             * select the new triangle with edge CCW continuation. */
-            while (pT_cur.point(3) != pT_cur.triangle(1).point(3)) {
-                moth_mesh2d_triangle_iter::lshift(pT_cur.triangle(1));
-            }
-            pT_cur = pT_cur.triangle(1);
-            while (!moth_e2d::intersect((*pT_cur).edge(1), {*pP_beg, *pP_end})) {
-                while (pT_cur.point(1) != pT_cur.triangle(3).point(1)) {
-                    moth_mesh2d_triangle_iter::lshift(pT_cur.triangle(3));
-                }
-                pT_cur = pT_cur.triangle(3);
-                pT_cur.set_bad();
-            }
-        }
-
-        /* Add the new triangle. */
-        pTriangles.push_back({pP_cur.nP, pP_end.nP,
-                                         pP_beg.nP});
-        pT_new = --triangle_end();
-
-        /* Carefully set the neighbors. */
-        if (pP_cur == pT_beg.point(1) ||
-            pP_cur == pT_beg.point(2) ||
-            pP_cur == pT_beg.point(3)) {
-            /* Link the triangle with the outer neighbor.
-             * ( The outer triangle may not be presorted. ) */
-            while (pT_beg.point(2) != pT_beg.triangle(3).point(3)) {
-                moth_mesh2d_triangle_iter::lshift(pT_cur.triangle(3));
-            }
-            pT_new.set_triangle(2, pT_beg.triangle(3));
-            pT_beg.triangle(3).set_triangle(2, pT_new);
-        } else {
-            /* Recursively re-triangulating the inner edge. */
-            pT_new.set_triangle(2, apply_constrain_ignoring_impl(pP_beg, pP_cur));
-            pT_new.triangle(2).set_triangle(1, pT_new);
-        }
-        if (pP_cur == pT_cur.point(1) ||
-            pP_cur == pT_cur.point(2) ||
-            pP_cur == pT_cur.point(3)) {
-            /* Link the triangle with the outer neighbor.
-             * ( The outer triangle may not be presorted. ) */
-            while (pT_beg.point(3) != pT_beg.triangle(2).point(2)) {
-                moth_mesh2d_triangle_iter::lshift(pT_cur.triangle(2));
-            }
-            pT_new.set_triangle(3, pT_cur.triangle(2));
-            pT_cur.triangle(2).set_triangle(3, pT_new);
-        } else {
-            /* Recursively re-triangulating the inner edge. */
-            pT_new.set_triangle(3, apply_constrain_ignoring_impl(pP_cur, pP_end));
-            pT_new.triangle(3).set_triangle(1, pT_new);
-        }
-        break;
-    }
-    return pT_new;
-}
-
-MOTH_HOST
-void moth_mesh2d::apply_constrains_ignoring()
-{
-    /* Apply all conforming constraints. */
-    for (moth_mesh2d_cedge_iter pE_cur{constraint_begin()}, pE_end{constraint_end()};
-                                pE_cur != pE_end; ++pE_cur) {
-        apply_constrain_ignoring(pE_cur);
-    }
-}   // void moth_mesh2d::apply_constrains_ignoring()
+}   // moth_mesh2d::insert_unconstrained
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -382,21 +213,22 @@ void moth_mesh2d::apply_constrains_ignoring()
 MOTH_HOST
 void moth_mesh2d::apply_constrain_conforming(const moth_mesh2d_cedge_iter& pE)
 {
-    /* Walk-around the first point of the current
-     * edge until the constraint is met or the edge intersects
-     * with the triangle -- ~O(1). */
+    /* Find first bad intersected triangle, proceed to walk-around
+     * the intersected area by using the connectivity -- ~O(1). */
     moth_mesh2d_cedge_iter pE_cur{pE}, pE_int{*this};
-    for (moth_mesh2d_point_iter pP_cur = pE.point(1), pP_end = pE.point(2);
+    for (moth_mesh2d_point_iter pP_cur{pE.point(1)}, pP_end{pE.point(2)};
                                 pP_cur != pP_end;) {
         for (moth_mesh2d_triangle_iter pT_cur{pP_cur.triangle()};;
                                        pT_cur = pT_cur.triangle(2)) {
-            /* Presort the triangle to start the walk-around. */
+            /* Presort the triangle to start the
+             * forward walk-around. */
             while (pP_cur != pT_cur.point(1)) {
                 moth_mesh2d_triangle_iter::lshift(pT_cur);
             }
 
             /* Check if the constraint was met,
-             * or the triangle intersects the constraint edge. */
+             * or the triangle intersects the constraint edge,
+             * otherwise select the next triangle around the starting point. */
             if (pT_cur.point(2) == pP_end ||
                 pT_cur.point(3) == pP_end) {
                 pP_cur = pP_end;
@@ -408,7 +240,7 @@ void moth_mesh2d::apply_constrain_conforming(const moth_mesh2d_cedge_iter& pE)
                      * by inserting the intersection point. */
                     moth_mesh2d_point_iter pP_int{insert_unconstrained(p_int)};
                     pConstraints.push_back({pP_int.nP,
-                                            pP_end.nP});
+                                                   pP_end.nP});
 
                     pE_int = --constraint_end();
                     pE_cur.set_point(2, pP_int);
@@ -427,7 +259,7 @@ void moth_mesh2d::apply_constrain_conforming(const moth_mesh2d_cedge_iter& pE)
             }
         }
     }
-}   // void moth_mesh2d::apply_constrain_conforming(moth_mesh2d_cedge_iter)
+}   // moth_mesh2d::apply_constrain_conforming
 
 MOTH_HOST
 void moth_mesh2d::apply_constrains_conforming()
@@ -437,7 +269,192 @@ void moth_mesh2d::apply_constrains_conforming()
                                 pE_cur != pE_end; ++pE_cur) {
         apply_constrain_conforming(pE_cur);
     }
-}   // void moth_mesh2d::apply_constrains_conforming()
+}   // moth_mesh2d::apply_constrains_conforming
+
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
+MOTH_HOST
+void moth_mesh2d::apply_constrain_ignoring(const moth_mesh2d_cedge_iter& pE)
+{
+    moth_mesh2d_point_iter pP_cur = pE.point(1);
+    moth_mesh2d_point_iter pP_end = pE.point(2);
+
+    /* Find first bad intersected triangle, proceed to walk-around
+     * the intersected area by using the connectivity -- ~O(1). */
+    moth_mesh2d_triangle_iter pT_bad{triangle_end()};
+    for (moth_mesh2d_triangle_iter pT_cur{pP_cur.triangle()};;
+                                   pT_cur = pT_cur.triangle(2)) {
+        /* Presort the triangle to start the
+         * forward walk-around. */
+        while (pP_cur != pT_cur.point(1)) {
+            moth_mesh2d_triangle_iter::lshift(pT_cur);
+        }
+
+        /* Check if the constraint was met,
+         * or the triangle intersects the constraint edge,
+         * otherwise select the next triangle around the starting point. */
+        if (pT_cur.point(2) == pP_end ||
+            pT_cur.point(3) == pP_end) {
+            break;
+        } else {
+            if (!moth_e2d::intersect((*pT_cur).edge(1), *pE)) {
+                continue;
+            }
+        }
+
+        /* Move the current triangle to the end,
+         * walk around edges until the end point is reached,
+         * also moving the intersected triangles the end. */
+        pT_cur.set_bad();
+        moth_mesh2d_triangle_iter::swap_assign(pT_cur, --pT_bad);
+        for (;;) {
+            /* Carefully proceed to the new edge:
+             * select the new triangle with edge CCW continuation. */
+            moth_mesh2d_triangle_iter::swap(pT_cur.triangle(1), --pT_bad);
+            while (pT_cur.point(3) != pT_cur.triangle(1).point(3)) {
+                moth_mesh2d_triangle_iter::lshift(pT_cur.triangle(1));
+            }
+            pT_cur = pT_cur.triangle(1);
+            pT_cur.set_bad();
+            while (!moth_e2d::intersect((*pT_cur).edge(1), *pE)) {
+                moth_mesh2d_triangle_iter::swap(pT_cur.triangle(3), --pT_bad);
+                while (pT_cur.point(1) != pT_cur.triangle(3).point(1)) {
+                    moth_mesh2d_triangle_iter::lshift(pT_cur.triangle(3));
+                }
+                pT_cur = pT_cur.triangle(3);
+                pT_cur.set_bad();
+            }
+
+            if (pT_cur.point(2) == pP_end) {
+                /* End point is reached,
+                 * recursively construct triangles in the intersected area,
+                 * using the Growing Circles method and break. */
+                moth_mesh2d_triangle_iter pT_lwr{apply_constrain_ignoring_impl(pP_cur, pP_end)};
+                moth_mesh2d_triangle_iter pT_upr{apply_constrain_ignoring_impl(pP_end, pP_cur)};
+                pT_lwr.set_triangle(1, pT_upr);
+                pT_upr.set_triangle(1, pT_lwr);
+                break;
+            }
+        }
+        break;
+    }
+
+    /* Walk through intersected triangles, move them to the end
+     * and delete -- ~O(1). */
+    for (moth_mesh2d_triangle_iter pT_cur{pT_bad}, pT_end{triangle_end()};
+                                   pT_cur != pT_end; ++pT_cur) {
+        if (pT_cur.bad()) {
+            moth_mesh2d_triangle_iter::swap(pT_cur, --pT_end);
+            pTriangles.pop_back();
+        } else {
+            break;
+        }
+    }
+}   // moth_mesh2d::apply_constrain_ignoring
+
+MOTH_HOST
+moth_mesh2d_triangle_iter
+moth_mesh2d::apply_constrain_ignoring_impl(moth_mesh2d_point_iter pP_beg,
+                                           moth_mesh2d_point_iter pP_end)
+{
+    moth_mesh2d_triangle_iter pT_new{*this}, pT_beg{*this};
+    for (moth_mesh2d_triangle_iter pT_cur{pP_beg.triangle()};;
+                                   pT_cur = pT_cur.triangle(2)) {
+        /* Presort the triangle to start the walk-around. */
+        while (pP_beg != pT_cur.point(1)) {
+            moth_mesh2d_triangle_iter::lshift(pT_cur);
+        }
+
+        /* Check if the constraint was met,
+         * or the triangle intersects the constraint edge,
+         * otherwise select the next triangle around the starting point. */
+        if (pT_cur.point(2) == pP_end ||
+            pT_cur.point(3) == pP_end) {
+            break;
+        } else {
+            if (!moth_e2d::intersect((*pT_cur).edge(1), {*pP_beg, *pP_end})) {
+                continue;
+            }
+        }
+
+        moth_mesh2d_point_iter pP_mid{pT_cur.point(2)};
+        for (pT_beg = pT_cur;;) {
+            /* Carefully proceed to the new edge:
+             * select the new triangle with edge CCW continuation. */
+            while (pT_cur.point(3) != pT_cur.triangle(1).point(3)) {
+                moth_mesh2d_triangle_iter::lshift(pT_cur.triangle(1));
+            }
+            pT_cur = pT_cur.triangle(1);
+            while (!moth_e2d::intersect((*pT_cur).edge(1), {*pP_beg, *pP_end})) {
+                while (pT_cur.point(1) != pT_cur.triangle(3).point(1)) {
+                    moth_mesh2d_triangle_iter::lshift(pT_cur.triangle(3));
+                }
+                pT_cur = pT_cur.triangle(3);
+                pT_cur.set_bad();
+            }
+
+            /* Find the closest point to the edge. */
+            if (pT_cur.point(2) != pP_end) {
+                if (moth_e2d::dist({*pP_beg, *pP_end}, *pT_cur.point(2)) <
+                    moth_e2d::dist({*pP_beg, *pP_end}, *pP_mid)) {
+                    pP_mid = pT_cur.point(2);
+                }
+            } else {
+                break;
+            }
+        }
+
+        /* Add the new triangle. */
+        pTriangles.push_back({pP_mid.nP, pP_end.nP,
+                                         pP_beg.nP});
+        pT_new = --triangle_end();
+
+        /* Carefully set the neighbors. */
+        if (pP_mid == pT_beg.point(1) ||
+            pP_mid == pT_beg.point(2) ||
+            pP_mid == pT_beg.point(3)) {
+            /* Link the triangle with the outer neighbor.
+             * ( The outer triangle may not be presorted. ) */
+            while (pT_beg.point(2) != pT_beg.triangle(3).point(1)) {
+                moth_mesh2d_triangle_iter::lshift(pT_beg.triangle(3));
+            }
+            pT_new.set_triangle(2, pT_beg.triangle(3));
+            pT_new.triangle(2).set_triangle(3, pT_new);
+        } else {
+            /* Recursively re-triangulating the inner edge. */
+            pT_new.set_triangle(2, apply_constrain_ignoring_impl(pP_beg, pP_mid));
+            pT_new.triangle(2).set_triangle(1, pT_new);
+        }
+        if (pP_mid == pT_cur.point(1) ||
+            pP_mid == pT_cur.point(2) ||
+            pP_mid == pT_cur.point(3)) {
+            /* Link the triangle with the outer neighbor.
+             * ( The outer triangle may not be presorted. ) */
+            while (pT_cur.point(2) != pT_cur.triangle(3).point(1)) {
+                moth_mesh2d_triangle_iter::lshift(pT_cur.triangle(3));
+            }
+            pT_new.set_triangle(2, pT_beg.triangle(3));
+            pT_new.triangle(2).set_triangle(3, pT_new);
+        } else {
+            /* Recursively re-triangulating the inner edge. */
+            pT_new.set_triangle(3, apply_constrain_ignoring_impl(pP_mid, pP_end));
+            pT_new.triangle(3).set_triangle(1, pT_new);
+        }
+        break;
+    }
+    return pT_new;
+}   // moth_mesh2d::apply_constrain_ignoring_impl
+
+MOTH_HOST
+void moth_mesh2d::apply_constrains_ignoring()
+{
+    /* Apply all conforming constraints. */
+    for (moth_mesh2d_cedge_iter pE_cur{constraint_begin()}, pE_end{constraint_end()};
+                                pE_cur != pE_end; ++pE_cur) {
+        apply_constrain_ignoring(pE_cur);
+    }
+}   // moth_mesh2d::apply_constrains_ignoring()
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //

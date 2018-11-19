@@ -45,6 +45,15 @@ public:
         return moth_p2d::len(p1);
     }
 
+    MOTH_HOST MOTH_DEVICE
+    static moth_real_t dist(const moth_e2d& e, const moth_p2d& p)
+    {
+        moth_e2d e1{p, e.p1};
+        moth_e2d e2{p, e.p2};
+        return det(e2, e1) / len(e);
+    }
+
+
 public:
     MOTH_HOST MOTH_DEVICE
     static moth_p2d cross(const moth_e2d& e1, const moth_e2d& e2, const moth_e2d& e3)
