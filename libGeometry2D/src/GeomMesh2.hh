@@ -141,7 +141,10 @@ public:
 
 public:
     MOTH_HOST
-    moth_mesh2d_cedge_iter apply_constrain_ignoring(const moth_mesh2d_cedge_iter& pE);
+    void apply_constrain_ignoring(const moth_mesh2d_cedge_iter& pE);
+    MOTH_HOST
+    moth_mesh2d_triangle_iter apply_constrain_ignoring_impl(moth_mesh2d_point_iter pP_cur,
+                                                            moth_mesh2d_point_iter pP_end);
 
     MOTH_HOST
     void apply_constrains_ignoring();
@@ -163,7 +166,7 @@ public:
 
 public:
     template<typename T = moth_mesh2d_triangle_iter>
-    void print(bool center = false)
+    void print(bool center = true)
     {
         std::string file_path("res/tr-" + std::to_string(99999) + ".txt");
         std::ofstream file(file_path);
@@ -524,7 +527,7 @@ public:
 
     /** Mark the triangle bad. */
     MOTH_HOST
-    void set_bad(bool b)
+    void set_bad(bool b = true)
     {
         assert(nT < pMesh.pTriangles.size());
         pMesh.pTriangles[nT].bad = b;

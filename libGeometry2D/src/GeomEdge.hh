@@ -100,7 +100,7 @@ public:
             moth_p2d v = e2.p1 - e1.p1;
             moth_real_t alpha = moth_p2d::det(v, v2) / det;
             moth_real_t gamma = moth_p2d::det(v, v1) / det;
-            if ((0.0 < alpha && alpha <= 1.0) && (0.0 < gamma && gamma <= 1.0)) {
+            if ((0.0 <= alpha && alpha <= 1.0) && (0.0 <= gamma && gamma <= 1.0)) {
                 /* Edges intersect on point. */
                 e.p1 = e1.p1 + alpha * v1;
                 e.p2 = e.p1;
@@ -137,6 +137,12 @@ public:
             }
         }
         return false;
+    }
+    MOTH_HOST MOTH_DEVICE
+    static bool intersect(const moth_e2d& e1, const moth_e2d& e2)
+    {
+        moth_e2d p{};
+        return intersect(e1, e2, p);
     }
 
 public:
