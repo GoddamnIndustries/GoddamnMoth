@@ -17,12 +17,26 @@ public:
     moth_e2d edge(moth_size_t k) const
     {
         switch (k) {
-            case 3:
-                return {p1, p2};
             case 1:
                 return {p2, p3};
             case 2:
                 return {p3, p1};
+            case 3:
+                return {p1, p2};
+            default:
+                std::abort();
+        }
+    }
+    MOTH_HOST MOTH_DEVICE
+    moth_real_t angle(moth_size_t k) const
+    {
+        switch (k) {
+            case 1:
+                return moth_e2d::angle({p3, p1}, {p2, p1});
+            case 2:
+                return moth_e2d::angle({p1, p2}, {p3, p2});
+            case 3:
+                return moth_e2d::angle({p2, p3}, {p1, p3});
             default:
                 std::abort();
         }

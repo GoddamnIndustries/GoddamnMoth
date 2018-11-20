@@ -128,8 +128,8 @@ int main()
 
     // Test constrained triangulation.
 #if 1
-    moth_poly2d rect{geom_poly2d_primitives::rect({0.0, 0.0}, {4.0, 4.0})};
-    moth_poly2d crcl{geom_poly2d_primitives::circle({4.0/3.0, 2.0}, 4.0/5.0, 25)};
+    moth_poly2d rect{geom_poly2d_primitives::rect({0.0, 0.0}, {4.0, 2.0})};
+    moth_poly2d crcl{geom_poly2d_primitives::circle({4.0/3.0, 1.0}, 2.0/5.0, 20)};
     //moth_poly2d crcl{geom_poly2d_primitives::star({4.0/3.0, 1.0}, 2.0/5.0, 1.5/5.0, 25)};
 
     moth_mesh2d builder;

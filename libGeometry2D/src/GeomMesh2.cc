@@ -538,9 +538,9 @@ void moth_mesh2d::refine()
         if (!(0.0 <= (*(pT_cur.point(2))).x && (*(pT_cur.point(2))).x <= 4.0)) {++pT_cur; continue;}
         if (!(0.0 <= (*(pT_cur.point(3))).x && (*(pT_cur.point(3))).x <= 4.0)) {++pT_cur; continue;}
 
-        if (!(0.0 <= (*(pT_cur.point(1))).y && (*(pT_cur.point(1))).y <= 4.0)) {++pT_cur; continue;}
-        if (!(0.0 <= (*(pT_cur.point(2))).y && (*(pT_cur.point(2))).y <= 4.0)) {++pT_cur; continue;}
-        if (!(0.0 <= (*(pT_cur.point(3))).y && (*(pT_cur.point(3))).y <= 4.0)) {++pT_cur; continue;}
+        if (!(0.0 <= (*(pT_cur.point(1))).y && (*(pT_cur.point(1))).y <= 2.0)) {++pT_cur; continue;}
+        if (!(0.0 <= (*(pT_cur.point(2))).y && (*(pT_cur.point(2))).y <= 2.0)) {++pT_cur; continue;}
+        if (!(0.0 <= (*(pT_cur.point(3))).y && (*(pT_cur.point(3))).y <= 2.0)) {++pT_cur; continue;}
 
         /*if (moth_p2d::len(*(pT_cur.point(1)) - moth_p2d{4.0/3.0, 2.0}) < 4.0/5.0 ||
             moth_p2d::len(*(pT_cur.point(2)) - moth_p2d{4.0/3.0, 2.0}) < 4.0/5.0 ||
@@ -549,16 +549,17 @@ void moth_mesh2d::refine()
         moth_e2d t_e1{(*pT_cur).edge(1)};
         moth_e2d t_e2{(*pT_cur).edge(2)};
         moth_e2d t_e3{(*pT_cur).edge(3)};
-        moth_radians_t theta1{moth_e2d::angle(t_e2, t_e3) * 180.0 / MOTH_PI/2};
-        moth_radians_t theta2{moth_e2d::angle(t_e1, t_e3) * 180.0 / MOTH_PI/2};
-        moth_radians_t theta3{moth_e2d::angle(t_e1, t_e2) * 180.0 / MOTH_PI/2};
+        moth_radians_t theta1{(*pT_cur).angle(1) * 180.0 / MOTH_PI};
+        moth_radians_t theta2{(*pT_cur).angle(2) * 180.0 / MOTH_PI};
+        moth_radians_t theta3{(*pT_cur).angle(3) * 180.0 / MOTH_PI};
         moth_degrees_t theta_min{std::min(theta1, std::min(theta2, theta3))};
         moth_real_t a1{moth_e2d::len(t_e1)};
         moth_real_t a2{moth_e2d::len(t_e2)};
         moth_real_t a3{moth_e2d::len(t_e3)};
         moth_real_t a_min{std::min(a1, std::min(a2, a3))};
         moth_real_t a_max{std::max(a1, std::max(a2, a3))};
-        if ((theta_min > 30.0 || a_max > 0.15) && a_min >= 0.105) {
+        //if ((theta_min < 30.0 || a_max > 0.09) && a_max >= 0.07) {
+        if (theta_min < 30.0 || (0.0001 <= a_max && a_max >= 0.1)) {
             moth_p2d cc{moth_triangle2d::circumcenter(*pT_cur)};
             for (moth_mesh2d_cedge_iter pE_cur{constraint_begin()}, pE_end{constraint_end()};
                  pE_cur != pE_end; ++pE_cur) {
